@@ -11,5 +11,5 @@ Emp Jewellers is a **12-month gold savings scheme app** designed to help custome
 - 📱 **Simple & User-Friendly UI** – Built with Flutter for a smooth experience across platforms.  
 
 
-![Home Screen](assets/images/jellery.png)
+![Home Screen](assets/images/emp_bg.png)
 ------------------------------------------------------
