@@ -1,4 +1,5 @@
-# 💎 Emp Jewellers – Gold Saving Scheme POS
+# 💎 Emp Jewellers 
+## Gold Saving Scheme POS
 
 Emp Jewellers is a **12-month gold savings scheme app** designed to help customers manage their monthly gold scheme contributions with ease.  
 
@@ -9,4 +10,6 @@ Emp Jewellers is a **12-month gold savings scheme app** designed to help custome
 - 📊 **Smart POS System** – Track customer details, schemes, and payments.  
 - 📱 **Simple & User-Friendly UI** – Built with Flutter for a smooth experience across platforms.  
 
+
+![Home Screen](assets/images/jellery.png)
 ------------------------------------------------------
