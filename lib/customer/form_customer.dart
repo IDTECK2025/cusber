@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_phosphor_icons/flutter_phosphor_icons.dart';
 import 'package:gold_pos/api.dart';
+import 'package:gold_pos/models/customer_model.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
@@ -37,7 +38,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// API Service Class
 // API Service Class - Updated for Customer Creation
 class ApiService {
   static const String baseUrl = ApiConfig.baseUrl;
@@ -250,7 +250,6 @@ class CustomerForm extends StatefulWidget {
   const CustomerForm({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
   _CustomerFormScreenState createState() => _CustomerFormScreenState();
 }
 
@@ -281,6 +280,26 @@ class _CustomerFormScreenState extends State<CustomerForm> {
   // Optional fields for group assignment
   final _amountController = TextEditingController();
   final _dateController = TextEditingController();
+
+  // Focus Nodes for Step 1
+  final _firstNameFocus = FocusNode();
+  final _lastNameFocus = FocusNode();
+  final _emailFocus = FocusNode();
+  final _phoneFocus = FocusNode();
+  final _aadhaarFocus = FocusNode();
+  final _panFocus = FocusNode();
+
+  // Focus Nodes for Step 2
+  final _holderNameFocus = FocusNode();
+  final _bankAccountFocus = FocusNode();
+  final _ifscFocus = FocusNode();
+  final _branchNameFocus = FocusNode();
+  final _branchCodeFocus = FocusNode();
+
+  // Focus Nodes for Step 3
+  final _cityFocus = FocusNode();
+  final _stateFocus = FocusNode();
+  final _addressFocus = FocusNode();
 
   bool _isPasswordVisible = false;
   bool _isSubmitting = false;
@@ -540,12 +559,12 @@ class _CustomerFormScreenState extends State<CustomerForm> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
+                  color: kPrimaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Icon(
                   Icons.check_circle,
-                  color: Colors.green,
+                  color: kPrimaryColor,
                   size: 24,
                 ),
               ),
@@ -566,7 +585,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                 'Customer account has been successfully created and confirmation emails have been sent.',
                 style: TextStyle(fontSize: 14),
               ),
-              if (userData != null && userData['_id'] != null) ...[
+              if (userData != null && userData['customerId'] != null) ...[
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -581,7 +600,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                         'Customer ID:',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      Text(userData['_id'].toString()),
+                      Text(userData['customerId'].toString()),
                     ],
                   ),
                 ),
@@ -590,26 +609,20 @@ class _CustomerFormScreenState extends State<CustomerForm> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
+                  color: kPrimaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.green.withOpacity(0.3)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.mark_email_read,
-                      color: Colors.green,
-                      size: 20,
-                    ),
+                    Icon(Icons.mark_email_read, color: kPrimaryColor, size: 20),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Welcome email and login PIN have been sent to the customer\'s email address.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.green[700],
-                          fontWeight: FontWeight.w500,
-                        ),
+                    Text(
+                      'Welcome email and login PIN have been sent to the customer\'s email address.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: kPrimaryColor,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -618,14 +631,15 @@ class _CustomerFormScreenState extends State<CustomerForm> {
             ],
           ),
           actions: [
-            OutlinedButton(
+            ElevatedButton(
               onPressed: () async {
                 Navigator.of(context).pop();
                 // Show PDF preview dialog
                 await _showPdfPreview(userData);
               },
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: kPrimaryColor),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kPrimaryColor,
+                foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -636,30 +650,27 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                   const Icon(
                     Icons.picture_as_pdf,
                     size: 16,
-                    color: kPrimaryColor,
+                    color: Colors.white,
                   ),
                   const SizedBox(width: 4),
-                  const Text(
-                    'View PDF',
-                    style: TextStyle(color: kPrimaryColor),
-                  ),
+                  const Text('View PDF'),
                 ],
               ),
             ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _resetForm();
-                Navigator.pushReplacementNamed(context, '/dashboard');
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: kPrimaryColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text('Done', style: TextStyle(color: Colors.white)),
-            ),
+            // ElevatedButton(
+            //   onPressed: () {
+            //     Navigator.of(context).pop();
+            //     _resetForm();
+            //     Navigator.pushReplacementNamed(context, '/dashboard');
+            //   },
+            //   style: ElevatedButton.styleFrom(
+            //     backgroundColor: kPrimaryColor,
+            //     shape: RoundedRectangleBorder(
+            //       borderRadius: BorderRadius.circular(8),
+            //     ),
+            //   ),
+            //   child: const Text('Done', style: TextStyle(color: Colors.white)),
+            // ),
           ],
         );
       },
@@ -681,53 +692,23 @@ class _CustomerFormScreenState extends State<CustomerForm> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Container(
-              width: double.maxFinite,
-              height: MediaQuery.of(context).size.height * 0.9,
+              width: 700,
+              height: MediaQuery.of(context).size.height * 0.8,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Column(
                 children: [
-                  // Header
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: kPrimaryColor,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(12),
-                        topRight: Radius.circular(12),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.picture_as_pdf,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 8),
-                        const Expanded(
-                          child: Text(
-                            'Customer Registration PDF',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(Icons.close, color: Colors.white),
-                        ),
-                      ],
-                    ),
-                  ),
-
                   // PDF Preview
                   Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
+                    child: ClipRRect(
+                      //padding: const EdgeInsets.all(16),
+                      borderRadius: BorderRadius.circular(12),
                       child: PdfPreview(
                         build: (format) => pdf.save(),
-                        allowPrinting: true,
+                        padding: EdgeInsets.zero,
+                        allowPrinting: false,
                         allowSharing: false,
                         canChangeOrientation: false,
                         canChangePageFormat: false,
@@ -735,80 +716,105 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                         maxPageWidth: 700,
                         initialPageFormat: PdfPageFormat.a4,
                         pdfFileName:
-                            'Customer_${customerData['_id'] ?? DateTime.now().millisecondsSinceEpoch}.pdf',
-                      ),
-                    ),
-                  ),
-
-                  // Action Buttons
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: const BorderRadius.only(
-                        bottomLeft: Radius.circular(12),
-                        bottomRight: Radius.circular(12),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        OutlinedButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: Colors.grey[400]!),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 12,
-                            ),
-                          ),
-                          child: const Text(
-                            'Cancel',
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                            'Customer_${customerData['customerId'] ?? DateTime.now().millisecondsSinceEpoch}.pdf',
+                        pdfPreviewPageDecoration: BoxDecoration(
+                          color: Colors.white,
                         ),
-                        const SizedBox(width: 12),
-                        ElevatedButton(
-                          onPressed: () async {
-                            Navigator.of(context).pop();
-                            await _smartDownloadPDF(customerData);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: kPrimaryColor,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 12,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+
+                        actionBarTheme: const PdfActionBarTheme(
+                          backgroundColor: Colors.white,
+                          height: 50,
+                          elevation: 2,
+                          actionSpacing: 20,
+                          //alignment: WrapAlignment.spaceBetween,
+                          //runAlignment: WrapAlignment.center,
+                          //crossAxisAlignment: WrapCrossAlignment.center,
+                        ),
+                        actions: [
+                          Row(
                             children: [
-                              Icon(
-                                Icons.download,
-                                size: 16,
-                                color: Colors.white,
+                              // Expanded(
+                              //   child: OutlinedButton(
+                              //     onPressed: () => Navigator.of(context).pop(),
+                              //     style: OutlinedButton.styleFrom(
+                              //       side: BorderSide(color: Colors.grey[400]!),
+                              //       shape: RoundedRectangleBorder(
+                              //         borderRadius: BorderRadius.circular(8),
+                              //       ),
+                              //     ),
+                              //     child: const Text(
+                              //       'Cancel',
+                              //       style: TextStyle(
+                              //         color: Colors.grey,
+                              //         fontWeight: FontWeight.w600,
+                              //       ),
+                              //     ),
+                              //   ),
+                              // ),
+                              // const SizedBox(
+                              //   width: 12,
+                              // ), // spacing between buttons
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: () => _printPDF(customerData),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: kBlueColor,
+                                    minimumSize: const Size.fromHeight(60),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(0),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'PRINT',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
                               ),
-                              SizedBox(width: 4),
-                              Text(
-                                'Download PDF',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
+                              // const SizedBox(
+                              //   width: 12,
+                              // ), // spacing between buttons
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: () async {
+                                    Navigator.of(context).pop();
+                                    await _smartDownloadPDF(customerData);
+                                    _resetForm();
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: kPrimaryColor,
+                                    minimumSize: const Size.fromHeight(60),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(0),
+                                    ),
+                                  ),
+                                  child: const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.download,
+                                        size: 16,
+                                        color: Colors.white,
+                                      ),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        'Download',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -828,13 +834,12 @@ class _CustomerFormScreenState extends State<CustomerForm> {
     }
   }
 
-  // Auto-download PDF (no user interaction)
   // Smart download with fallback
   Future<void> _smartDownloadPDF(Map<String, dynamic> customerData) async {
     try {
       final pdf = await _generatePDF(customerData);
       final fileName =
-          'Customer_${customerData['_id'] ?? DateTime.now().millisecondsSinceEpoch}.pdf';
+          'Customer_${customerData['customerId'] ?? DateTime.now().millisecondsSinceEpoch}.pdf';
 
       // Try file picker first
       try {
@@ -977,138 +982,68 @@ class _CustomerFormScreenState extends State<CustomerForm> {
   }
 
   // Extract PDF generation logic into separate method
-  // Extract PDF generation logic into separate method
+  // Extract PDF generation logic with improved layout management
   Future<pw.Document> _generatePDF(Map<String, dynamic> customerData) async {
-    final pdf = pw.Document();
+    final regularFont = await PdfGoogleFonts.nunitoRegular();
+    final boldFont = await PdfGoogleFonts.nunitoBold();
+
+    final pdf = pw.Document(
+      theme: pw.ThemeData.withFont(base: regularFont, bold: boldFont),
+    );
 
     pdf.addPage(
-      pw.Page(
+      pw.MultiPage(
+        // Changed from pw.Page to pw.MultiPage for better content flow
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(32),
         build: (pw.Context context) {
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              // Header
-              pw.Container(
-                padding: const pw.EdgeInsets.only(bottom: 20),
-                decoration: const pw.BoxDecoration(
-                  border: pw.Border(
-                    bottom: pw.BorderSide(width: 2, color: PdfColors.blue),
-                  ),
-                ),
-                child: pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                      children: [
-                        pw.Text(
-                          'CUSTOMER REGISTRATION',
-                          style: pw.TextStyle(
-                            fontSize: 24,
-                            fontWeight: pw.FontWeight.bold,
-                            color: PdfColors.blue900,
-                          ),
-                        ),
-                        pw.SizedBox(height: 4),
-                        pw.Text(
-                          'Registration Date: ${DateFormat('dd/MM/yyyy').format(DateTime.now())}',
-                          style: const pw.TextStyle(fontSize: 12),
-                        ),
-                      ],
-                    ),
-                    pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.end,
-                      children: [
-                        pw.Text(
-                          'Customer ID:',
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                        ),
-                        pw.Text(
-                          customerData['_id']?.toString() ?? 'N/A',
-                          style: const pw.TextStyle(fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+          return [
+            // Header Section
+            _buildPDFHeader(customerData),
+            pw.SizedBox(height: 24),
 
-              pw.SizedBox(height: 30),
+            // Personal Details Section
+            _buildPDFSection('PERSONAL DETAILS', [
+              [
+                'Full Name',
+                '${_firstNameController.text} ${_lastNameController.text}',
+              ],
+              ['Email Address', _emailController.text],
+              ['Phone Number', _phoneController.text],
+              ['Aadhaar Number', _aadhaarController.text],
+              ['PAN Number', _panController.text],
+            ]),
 
-              // Personal Details Section
-              _buildPDFSection('PERSONAL DETAILS', [
-                [
-                  'Full Name',
-                  '${_firstNameController.text} ${_lastNameController.text}',
-                ],
-                ['Email Address', _emailController.text],
-                ['Phone Number', _phoneController.text],
-                ['Aadhaar Number', _aadhaarController.text],
-                ['PAN Number', _panController.text],
-              ]),
+            pw.SizedBox(height: 16),
 
-              pw.SizedBox(height: 20),
+            // Bank Details Section
+            _buildPDFSection('BANK DETAILS', [
+              ['Account Holder Name', _holderNameController.text],
+              ['Account Number', _bankAccountController.text],
+              ['IFSC Code', _ifscController.text],
+              ['Branch Name', _branchNameController.text],
+              ['Branch Code', _branchCodeController.text],
+            ]),
 
-              // Bank Details Section
-              _buildPDFSection('BANK DETAILS', [
-                ['Account Holder Name', _holderNameController.text],
-                ['Account Number', _bankAccountController.text],
-                ['IFSC Code', _ifscController.text],
-                ['Branch Name', _branchNameController.text],
-                ['Branch Code', _branchCodeController.text],
-              ]),
+            pw.SizedBox(height: 16),
 
-              pw.SizedBox(height: 20),
+            // Address Details Section with dynamic height handling
+            _buildPDFAddressSection(),
 
-              // Address Details Section
-              _buildPDFSection('ADDRESS DETAILS', [
-                ['City', _cityController.text],
-                ['State', _stateController.text],
-                ['Address', _addressController.text],
-              ]),
+            pw.SizedBox(height: 16),
 
-              pw.SizedBox(height: 20),
+            // Group Assignment Section - Ensure it's always visible
+            _buildPDFSection('GROUP ASSIGNMENT', [
+              ['Amount', '₹ ${_amountController.text}'],
+              ['Group Date', _formatDateForDisplay(_dateController.text)],
+            ]),
 
-              // Group Assignment Section
-              _buildPDFSection('GROUP ASSIGNMENT', [
-                ['Amount', '₹ ${_amountController.text}'],
-                ['Group Date', _dateController.text],
-              ]),
-
-              pw.Spacer(),
-
-              // Footer
-              pw.Container(
-                padding: const pw.EdgeInsets.only(top: 20),
-                decoration: const pw.BoxDecoration(
-                  border: pw.Border(
-                    top: pw.BorderSide(width: 1, color: PdfColors.grey300),
-                  ),
-                ),
-                child: pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Text(
-                      'Generated on: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}',
-                      style: const pw.TextStyle(
-                        fontSize: 10,
-                        color: PdfColors.grey700,
-                      ),
-                    ),
-                    pw.Text(
-                      'System Generated Document',
-                      style: const pw.TextStyle(
-                        fontSize: 10,
-                        color: PdfColors.grey700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          );
+            // Add some spacing before footer
+            pw.SizedBox(height: 24),
+          ];
+        },
+        footer: (pw.Context context) {
+          return _buildPDFFooter();
         },
       ),
     );
@@ -1116,7 +1051,118 @@ class _CustomerFormScreenState extends State<CustomerForm> {
     return pdf;
   }
 
-  // Helper method to build PDF sections
+  // Separate header building method
+  pw.Widget _buildPDFHeader(Map<String, dynamic> customerData) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.only(bottom: 20),
+      decoration: const pw.BoxDecoration(
+        border: pw.Border(
+          bottom: pw.BorderSide(width: 2, color: PdfColors.blue),
+        ),
+      ),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                'CUSTOMER REGISTRATION',
+                style: pw.TextStyle(
+                  fontSize: 24,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.blue900,
+                ),
+              ),
+              pw.SizedBox(height: 4),
+              pw.Text(
+                'Registration Date: ${DateFormat('dd/MM/yyyy').format(DateTime.now())}',
+                style: const pw.TextStyle(fontSize: 12),
+              ),
+            ],
+          ),
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.end,
+            children: [
+              pw.Text(
+                'Customer ID:',
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+              ),
+              pw.Text(
+                customerData['customerId']?.toString() ?? 'N/A',
+                style: const pw.TextStyle(fontSize: 12),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Special address section handler for multi-line addresses
+  pw.Widget _buildPDFAddressSection() {
+    // Split address into lines and limit display
+    String addressText = _addressController.text;
+    List<String> addressLines = addressText.split('\n');
+
+    // If address is very long, truncate and add "..."
+    String displayAddress = addressText;
+    if (addressLines.length > 5) {
+      displayAddress = addressLines.take(4).join('\n') + '\n...';
+    } else if (addressText.length > 200) {
+      displayAddress = addressText.substring(0, 200) + '...';
+    }
+
+    return _buildPDFSection('ADDRESS DETAILS', [
+      ['City', _cityController.text],
+      ['State', _stateController.text],
+      ['Address', displayAddress],
+    ]);
+  }
+
+  // Footer building method
+  pw.Widget _buildPDFFooter() {
+    return pw.Container(
+      padding: const pw.EdgeInsets.only(top: 20),
+      decoration: const pw.BoxDecoration(
+        border: pw.Border(
+          top: pw.BorderSide(width: 1, color: PdfColors.grey300),
+        ),
+      ),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Text(
+            'Generated on: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}',
+            style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+          ),
+          pw.Text(
+            'System Generated Document',
+            style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper method to format date for display
+  String _formatDateForDisplay(String dateString) {
+    try {
+      if (dateString.isEmpty) return 'Not provided';
+
+      // If it's in yyyy-MM-dd format, convert to dd-MM-yyyy for display
+      if (RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(dateString)) {
+        final parsedDate = DateTime.parse(dateString);
+        return DateFormat('dd-MM-yyyy').format(parsedDate);
+      }
+
+      return dateString; // Return as-is if already in different format
+    } catch (e) {
+      return dateString; // Return original if parsing fails
+    }
+  }
+
+  // Updated helper method to build PDF sections with better spacing
   pw.Widget _buildPDFSection(String title, List<List<String>> data) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -1124,12 +1170,12 @@ class _CustomerFormScreenState extends State<CustomerForm> {
         pw.Text(
           title,
           style: pw.TextStyle(
-            fontSize: 16,
+            fontSize: 14, // Reduced from 16 to save space
             fontWeight: pw.FontWeight.bold,
             color: PdfColors.blue800,
           ),
         ),
-        pw.SizedBox(height: 8),
+        pw.SizedBox(height: 6), // Reduced from 8 to save space
         pw.Container(
           decoration: pw.BoxDecoration(
             border: pw.Border.all(color: PdfColors.grey300),
@@ -1138,7 +1184,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
           child: pw.Table(
             columnWidths: {
               0: const pw.FlexColumnWidth(1),
-              1: const pw.FlexColumnWidth(2),
+              1: const pw.FlexColumnWidth(2.5), // Increased width for content
             },
             children:
                 data.map((row) {
@@ -1156,7 +1202,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                           row[0],
                           style: pw.TextStyle(
                             fontWeight: pw.FontWeight.bold,
-                            fontSize: 12,
+                            fontSize: 11, // Reduced from 12
                           ),
                         ),
                       ),
@@ -1164,7 +1210,15 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                         padding: const pw.EdgeInsets.all(8),
                         child: pw.Text(
                           row[1].isNotEmpty ? row[1] : 'Not provided',
-                          style: const pw.TextStyle(fontSize: 12),
+                          style: const pw.TextStyle(
+                            fontSize: 11, // Reduced from 12
+                            height:
+                                1.3, // Better line spacing for multi-line content
+                          ),
+                          maxLines:
+                              title == 'ADDRESS DETAILS' && row[0] == 'Address'
+                                  ? 6
+                                  : 2,
                         ),
                       ),
                     ],
@@ -1716,15 +1770,29 @@ class _CustomerFormScreenState extends State<CustomerForm> {
     if (isMobile) {
       return Column(
         children: [
-          _buildTextField('First Name', _firstNameController, isRequired: true),
+          _buildTextField(
+            'First Name',
+            _firstNameController,
+            isRequired: true,
+            focusNode: _firstNameFocus,
+            nextFocusNode: _lastNameFocus,
+          ),
           const SizedBox(height: 16),
-          _buildTextField('Last Name', _lastNameController, isRequired: true),
+          _buildTextField(
+            'Last Name',
+            _lastNameController,
+            isRequired: true,
+            focusNode: _lastNameFocus,
+            nextFocusNode: _emailFocus,
+          ),
           const SizedBox(height: 16),
           _buildTextField(
             'Email Address',
             _emailController,
             keyboardType: TextInputType.emailAddress,
             isRequired: true,
+            focusNode: _emailFocus,
+            nextFocusNode: _phoneFocus,
           ),
           const SizedBox(height: 16),
           _buildTextField(
@@ -1732,6 +1800,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
             _phoneController,
             keyboardType: TextInputType.phone,
             isRequired: true,
+            focusNode: _phoneFocus,
+            nextFocusNode: _aadhaarFocus,
           ),
           const SizedBox(height: 16),
           _buildTextField(
@@ -1739,6 +1809,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
             _aadhaarController,
             keyboardType: TextInputType.number,
             isRequired: true,
+            focusNode: _aadhaarFocus,
+            nextFocusNode: _panFocus,
           ),
           const SizedBox(height: 16),
           _buildTextField(
@@ -1747,6 +1819,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
             keyboardType: TextInputType.visiblePassword,
             isRequired: true,
             isUpperCase: true,
+            focusNode: _panFocus,
           ),
         ],
       );
@@ -1760,6 +1833,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                   'First Name',
                   _firstNameController,
                   isRequired: true,
+                  focusNode: _firstNameFocus,
+                  nextFocusNode: _lastNameFocus,
                 ),
               ),
               const SizedBox(width: 20),
@@ -1768,6 +1843,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                   'Last Name',
                   _lastNameController,
                   isRequired: true,
+                  focusNode: _lastNameFocus,
+                  nextFocusNode: _emailFocus,
                 ),
               ),
             ],
@@ -1781,6 +1858,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                   _emailController,
                   keyboardType: TextInputType.emailAddress,
                   isRequired: true,
+                  focusNode: _emailFocus,
+                  nextFocusNode: _phoneFocus,
                 ),
               ),
               const SizedBox(width: 20),
@@ -1790,6 +1869,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                   _phoneController,
                   keyboardType: TextInputType.phone,
                   isRequired: true,
+                  focusNode: _phoneFocus,
+                  nextFocusNode: _aadhaarFocus,
                 ),
               ),
             ],
@@ -1803,6 +1884,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                   _aadhaarController,
                   keyboardType: TextInputType.number,
                   isRequired: true,
+                  focusNode: _aadhaarFocus,
+                  nextFocusNode: _panFocus,
                 ),
               ),
               const SizedBox(width: 20),
@@ -1813,6 +1896,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                   keyboardType: TextInputType.visiblePassword,
                   isRequired: true,
                   isUpperCase: true,
+                  focusNode: _panFocus,
                 ),
               ),
             ],
@@ -1833,6 +1917,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
             keyboardType: TextInputType.text,
             isRequired: true,
             isUpperCase: true,
+            focusNode: _holderNameFocus,
+            nextFocusNode: _bankAccountFocus,
           ),
           const SizedBox(height: 16),
           _buildTextField(
@@ -1840,6 +1926,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
             _bankAccountController,
             keyboardType: TextInputType.number,
             isRequired: true,
+            focusNode: _bankAccountFocus,
+            nextFocusNode: _ifscFocus,
           ),
           const SizedBox(height: 16),
           _buildTextField(
@@ -1847,6 +1935,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
             _ifscController,
             isRequired: true,
             isUpperCase: true,
+            focusNode: _ifscFocus,
+            nextFocusNode: _branchNameFocus,
           ),
           const SizedBox(height: 16),
           _buildTextField(
@@ -1855,6 +1945,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
             keyboardType: TextInputType.text,
             isRequired: true,
             isUpperCase: true,
+            focusNode: _branchNameFocus,
+            nextFocusNode: _branchCodeFocus,
           ),
           const SizedBox(height: 16),
           _buildTextField(
@@ -1863,6 +1955,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
             keyboardType: TextInputType.visiblePassword,
             isRequired: true,
             isUpperCase: true,
+            focusNode: _branchCodeFocus,
           ),
         ],
       );
@@ -1878,6 +1971,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                   keyboardType: TextInputType.text,
                   isRequired: true,
                   isUpperCase: true,
+                  focusNode: _holderNameFocus,
+                  nextFocusNode: _bankAccountFocus,
                 ),
               ),
               const SizedBox(width: 20),
@@ -1887,6 +1982,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                   _bankAccountController,
                   keyboardType: TextInputType.number,
                   isRequired: true,
+                  focusNode: _bankAccountFocus,
+                  nextFocusNode: _ifscFocus,
                 ),
               ),
             ],
@@ -1897,6 +1994,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
             _ifscController,
             isRequired: true,
             isUpperCase: true,
+            focusNode: _ifscFocus,
+            nextFocusNode: _branchNameFocus,
           ),
           const SizedBox(height: 30),
           Row(
@@ -1908,6 +2007,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                   keyboardType: TextInputType.text,
                   isRequired: true,
                   isUpperCase: true,
+                  focusNode: _branchNameFocus,
+                  nextFocusNode: _branchCodeFocus,
                 ),
               ),
               const SizedBox(width: 20),
@@ -1918,6 +2019,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                   keyboardType: TextInputType.visiblePassword,
                   isRequired: true,
                   isUpperCase: true,
+                  focusNode: _branchCodeFocus,
                 ),
               ),
             ],
@@ -1936,6 +2038,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
             _cityController,
             keyboardType: TextInputType.text,
             isRequired: true,
+            focusNode: _cityFocus,
+            nextFocusNode: _stateFocus,
           ),
           const SizedBox(height: 16),
           _buildTextField(
@@ -1943,6 +2047,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
             _stateController,
             keyboardType: TextInputType.text,
             isRequired: true,
+            focusNode: _stateFocus,
+            nextFocusNode: _addressFocus,
           ),
           const SizedBox(height: 16),
           _buildTextField(
@@ -1951,6 +2057,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
             keyboardType: TextInputType.multiline,
             isRequired: true,
             maxLines: 3,
+            focusNode: _addressFocus,
           ),
           const SizedBox(height: 24),
           // Divider
@@ -1991,6 +2098,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                   _cityController,
                   keyboardType: TextInputType.text,
                   isRequired: true,
+                  focusNode: _cityFocus,
+                  nextFocusNode: _stateFocus,
                 ),
               ),
               const SizedBox(width: 20),
@@ -2000,6 +2109,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                   _stateController,
                   keyboardType: TextInputType.text,
                   isRequired: true,
+                  focusNode: _stateFocus,
+                  nextFocusNode: _addressFocus,
                 ),
               ),
             ],
@@ -2011,6 +2122,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
             keyboardType: TextInputType.multiline,
             isRequired: true,
             maxLines: 3,
+            focusNode: _addressFocus,
           ),
           const SizedBox(height: 30),
           // Divider
@@ -2055,6 +2167,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
     bool isUpperCase = false,
     int maxLines = 1,
     String? prefixText,
+    FocusNode? focusNode,
+    FocusNode? nextFocusNode,
   }) {
     List<TextInputFormatter> inputFormatters = [];
 
@@ -2094,10 +2208,18 @@ class _CustomerFormScreenState extends State<CustomerForm> {
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
+          focusNode: focusNode,
           keyboardType: keyboardType,
           cursorColor: kPrimaryColor,
           maxLines: maxLines,
           inputFormatters: inputFormatters,
+          textInputAction:
+              maxLines > 1 ? TextInputAction.newline : TextInputAction.next,
+          onFieldSubmitted: (value) {
+            if (nextFocusNode != null) {
+              FocusScope.of(context).requestFocus(nextFocusNode);
+            }
+          },
           validator:
               isRequired
                   ? (value) {
@@ -2251,7 +2373,6 @@ class _CustomerFormScreenState extends State<CustomerForm> {
     );
   }
 
-  // 🔹 Group Date Dropdown (only 10 & 20 rule)
   Widget _buildGroupDateDropdown() {
     DateTime now = DateTime.now();
     int day = now.day;
@@ -2412,6 +2533,26 @@ class _CustomerFormScreenState extends State<CustomerForm> {
     // Group assignment controllers
     _amountController.dispose();
     _dateController.dispose();
+
+    // Focus Nodes Step 1
+    _firstNameFocus.dispose();
+    _lastNameFocus.dispose();
+    _emailFocus.dispose();
+    _phoneFocus.dispose();
+    _aadhaarFocus.dispose();
+    _panFocus.dispose();
+
+    // Focus Nodes Step 2
+    _holderNameFocus.dispose();
+    _bankAccountFocus.dispose();
+    _ifscFocus.dispose();
+    _branchNameFocus.dispose();
+    _branchCodeFocus.dispose();
+
+    // Focus Nodes Step 3
+    _cityFocus.dispose();
+    _stateFocus.dispose();
+    _addressFocus.dispose();
 
     super.dispose();
   }
