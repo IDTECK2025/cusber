@@ -1,16 +1,12 @@
-# gold_pos
+# 💎 Emp Jewellers – Gold Saving Scheme POS
 
-A new Flutter project.
+Emp Jewellers is a **12-month gold savings scheme app** designed to help customers manage their monthly gold scheme contributions with ease.  
 
-## Getting Started
+## ✨ Key Highlights
+- 📅 **12-Month Gold Scheme** – Save every month and build your gold investment.  
+- 💰 **Flexible Plans** – Start from ₹1000 up to ₹10,000 per month.  
+- 🎁 **Special Rewards** – Pay on or before the due date each month to earn **bonus gold coins**.  
+- 📊 **Smart POS System** – Track customer details, schemes, and payments.  
+- 📱 **Simple & User-Friendly UI** – Built with Flutter for a smooth experience across platforms.  
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+------------------------------------------------------
