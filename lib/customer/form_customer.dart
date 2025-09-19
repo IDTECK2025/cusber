@@ -62,7 +62,7 @@ class ApiService {
 
   // Login method to get authentication token
   static Future<Map<String, dynamic>> login({
-    String? email,
+    required String email,
     required String password,
   }) async {
     try {
@@ -114,17 +114,21 @@ class ApiService {
   static Future<Map<String, dynamic>> createCustomer({
     required String firstName,
     required String lastName,
-    required String phone,
     required String email,
-    required String holderName,
-    required String bankAccount,
-    required String branchName,
-    required String branchCode,
+    required String phone,
+    // required String aadhaar,
+    // required String pan,
+    // required String holderName,
+    // required String bankAccount,
+    // required String ifsc,
+    // required String branchName,
+    // required String branchCode,
     required String city,
     required String state,
     required String address,
     required double amount,
     required String date,
+    required String emaidate, // <-- DELETE THIS LINE
   }) async {
     try {
       final token = await getToken();
@@ -141,12 +145,19 @@ class ApiService {
         'name': '$firstName $lastName',
         'email': email,
         'phone': phone,
-        'address': address,
+        // 'adharcard': aadhaar,
+        // 'pancard': pan,
+        // 'address': address,
+        // 'Bank': holderName,
+        // 'IFSC': ifsc,
+        // 'acc': bankAccount,
+        // 'branch': branchName,
         'city': city,
         'state': state,
         'addrass': address,
         'amount': amount,
         'date': date,
+        'emaidate': date, // FIXED: Use date value for emaidate
       };
 
       final response = await http.post(
@@ -250,12 +261,15 @@ class _CustomerFormScreenState extends State<CustomerForm> {
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
+  // final _aadhaarController = TextEditingController();
+  // final _panController = TextEditingController();
 
   // Step 2 - Bank Details Controllers
-  final _holderNameController = TextEditingController();
-  final _bankAccountController = TextEditingController();
-  final _branchNameController = TextEditingController();
-  final _branchCodeController = TextEditingController();
+  // final _holderNameController = TextEditingController();
+  // final _bankAccountController = TextEditingController();
+  // final _ifscController = TextEditingController();
+  // final _branchNameController = TextEditingController();
+  // final _branchCodeController = TextEditingController();
 
   // Step 3 - Address Details Controllers
   final _cityController = TextEditingController();
@@ -271,12 +285,15 @@ class _CustomerFormScreenState extends State<CustomerForm> {
   final _lastNameFocus = FocusNode();
   final _emailFocus = FocusNode();
   final _phoneFocus = FocusNode();
+  // final _aadhaarFocus = FocusNode();
+  // final _panFocus = FocusNode();
 
-  // Focus Nodes for Step 2
-  final _holderNameFocus = FocusNode();
-  final _bankAccountFocus = FocusNode();
-  final _branchNameFocus = FocusNode();
-  final _branchCodeFocus = FocusNode();
+  // // Focus Nodes for Step 2
+  // final _holderNameFocus = FocusNode();
+  // final _bankAccountFocus = FocusNode();
+  // final _ifscFocus = FocusNode();
+  // final _branchNameFocus = FocusNode();
+  // final _branchCodeFocus = FocusNode();
 
   // Focus Nodes for Step 3
   final _cityFocus = FocusNode();
@@ -354,15 +371,19 @@ class _CustomerFormScreenState extends State<CustomerForm> {
         lastName: _lastNameController.text,
         email: _emailController.text,
         phone: _phoneController.text,
-        holderName: _holderNameController.text,
-        bankAccount: _bankAccountController.text,
-        branchName: _branchNameController.text,
-        branchCode: _branchCodeController.text,
+        // aadhaar: _aadhaarController.text,
+        // pan: _panController.text,
+        // holderName: _holderNameController.text,
+        // bankAccount: _bankAccountController.text,
+        // ifsc: _ifscController.text,
+        // branchName: _branchNameController.text,
+        // branchCode: _branchCodeController.text,
         city: _cityController.text,
         state: _stateController.text ?? 'Kerala',
         address: _addressController.text,
         amount: double.parse(_amountController.text),
         date: formatDate(_dateController.text),
+        emaidate: formatDate(_dateController.text), // <-- DELETE THIS LINE
       );
 
       Navigator.of(context).pop(); // Close loading dialog
@@ -986,18 +1007,20 @@ class _CustomerFormScreenState extends State<CustomerForm> {
               ],
               ['Email Address', _emailController.text],
               ['Phone Number', _phoneController.text],
+              // ['Aadhaar Number', _aadhaarController.text],
+              // ['PAN Number', _panController.text],
             ]),
 
             pw.SizedBox(height: 16),
 
-            // Bank Details Section
-            _buildPDFSection('BANK DETAILS', [
-              ['Account Holder Name', _holderNameController.text],
-              ['Account Number', _bankAccountController.text],
-              ['Branch Name', _branchNameController.text],
-              ['Branch Code', _branchCodeController.text],
-            ]),
-
+            // // Bank Details Section
+            // _buildPDFSection('BANK DETAILS', [
+            //   ['Account Holder Name', _holderNameController.text],
+            //   ['Account Number', _bankAccountController.text],
+            //   ['IFSC Code', _ifscController.text],
+            //   ['Branch Name', _branchNameController.text],
+            //   ['Branch Code', _branchCodeController.text],
+            // ]),
             pw.SizedBox(height: 16),
 
             // Address Details Section with dynamic height handling
@@ -1258,10 +1281,13 @@ class _CustomerFormScreenState extends State<CustomerForm> {
     _lastNameController.clear();
     _emailController.clear();
     _phoneController.clear();
-    _holderNameController.clear();
-    _bankAccountController.clear();
-    _branchNameController.clear();
-    _branchCodeController.clear();
+    // _aadhaarController.clear();
+    // _panController.clear();
+    // _holderNameController.clear();
+    // _bankAccountController.clear();
+    // _ifscController.clear();
+    // _branchNameController.clear();
+    // _branchCodeController.clear();
     _cityController.clear();
     _stateController.clear();
     _addressController.clear();
@@ -1287,7 +1313,26 @@ class _CustomerFormScreenState extends State<CustomerForm> {
             ),
             _buildConfirmationRow('Email Address', _emailController.text),
             _buildConfirmationRow('Phone Number', _phoneController.text),
+            // _buildConfirmationRow(
+            //   'Aadhaar Card Number',
+            //   _aadhaarController.text,
+            // ),
+            // _buildConfirmationRow('Pan Card Number', _panController.text),
           ]),
+          // const SizedBox(height: 24),
+          // _buildConfirmationSection('Bank Details', [
+          //   _buildConfirmationRow(
+          //     'Account Holder Name',
+          //     _holderNameController.text,
+          //   ),
+          //   _buildConfirmationRow(
+          //     'Bank Account Number',
+          //     _bankAccountController.text,
+          //   ),
+          //   _buildConfirmationRow('IFSC Code', _ifscController.text),
+          //   _buildConfirmationRow('Branch Name', _branchNameController.text),
+          //   _buildConfirmationRow('Branch Code', _branchCodeController.text),
+          // ]),
           const SizedBox(height: 24),
           _buildConfirmationSection('Address Details', [
             _buildConfirmationRow('City', _cityController.text),
@@ -1482,19 +1527,13 @@ class _CustomerFormScreenState extends State<CustomerForm> {
           _buildConnector(currentStep > 1),
           _buildStepItem(
             2,
-            'Bank Details',
+            'Address Details',
             currentStep > 2,
             isActive: currentStep == 2,
           ),
           _buildConnector(currentStep > 2),
-          _buildStepItem(
-            3,
-            'Address Details',
-            currentStep > 3,
-            isActive: currentStep == 3,
-          ),
-          _buildConnector(currentStep > 3),
-          _buildStepItem(4, 'Confirmation', false, isActive: currentStep == 4),
+          _buildStepItem(3, 'Confirmation', false, isActive: currentStep == 3),
+
           const Spacer(),
           Center(
             child: Image.asset(
@@ -1637,10 +1676,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
       case 1:
         return 'Customer Personal Details';
       case 2:
-        return 'Add bank details';
-      case 3:
         return 'Add address details';
-      case 4:
+      case 3:
         return 'Confirm customer information';
       default:
         return 'Complete customer profile';
@@ -1652,10 +1689,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
       case 1:
         return 'Enter customer personal information for account setup';
       case 2:
-        return 'Please provide customer bank account details';
-      case 3:
         return 'Please provide customer address and location information';
-      case 4:
+      case 3:
         return 'Please review customer information and confirm to create account';
       default:
         return 'Please complete all required customer information';
@@ -1677,7 +1712,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
             ),
           const SizedBox(width: 8),
           Text(
-            'STEP $currentStep OF 4',
+            'STEP $currentStep OF 3',
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -1702,6 +1737,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                 key: ValueKey(currentStep),
                 children: [
                   if (currentStep == 1) _buildStep1Fields(isMobile),
+                  //if (currentStep == 2) _buildStep2Fields(isMobile),
                   if (currentStep == 2) _buildStep3Fields(isMobile),
                   if (currentStep == 3) _buildStep4Confirmation(isMobile),
                 ],
@@ -1751,7 +1787,26 @@ class _CustomerFormScreenState extends State<CustomerForm> {
             keyboardType: TextInputType.phone,
             isRequired: true,
             focusNode: _phoneFocus,
+            //nextFocusNode: _aadhaarFocus,
           ),
+          // const SizedBox(height: 16),
+          // _buildTextField(
+          //   'Aadhaar Card Number',
+          //   _aadhaarController,
+          //   keyboardType: TextInputType.number,
+          //   isRequired: true,
+          //   focusNode: _aadhaarFocus,
+          //   nextFocusNode: _panFocus,
+          // ),
+          // const SizedBox(height: 16),
+          // _buildTextField(
+          //   'Pan Card Number',
+          //   _panController,
+          //   keyboardType: TextInputType.visiblePassword,
+          //   isRequired: true,
+          //   isUpperCase: true,
+          //   focusNode: _panFocus,
+          // ),
         ],
       );
     } else {
@@ -1801,15 +1856,164 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                   keyboardType: TextInputType.phone,
                   isRequired: true,
                   focusNode: _phoneFocus,
+                  //nextFocusNode: _aadhaarFocus,
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 30),
+          // Row(
+          //   children: [
+          //     Expanded(
+          //       child: _buildTextField(
+          //         'Aadhaar Card Number',
+          //         _aadhaarController,
+          //         keyboardType: TextInputType.number,
+          //         isRequired: true,
+          //         focusNode: _aadhaarFocus,
+          //         nextFocusNode: _panFocus,
+          //       ),
+          //     ),
+          //     const SizedBox(width: 20),
+          //     Expanded(
+          //       child: _buildTextField(
+          //         'Pan Card Number',
+          //         _panController,
+          //         keyboardType: TextInputType.visiblePassword,
+          //         isRequired: true,
+          //         isUpperCase: true,
+          //         focusNode: _panFocus,
+          //       ),
+          //     ),
+          //   ],
+          // ),
           const SizedBox(height: 16),
         ],
       );
     }
   }
+
+  // Widget _buildStep2Fields(bool isMobile) {
+  //   if (isMobile) {
+  //     return Column(
+  //       children: [
+  //         _buildTextField(
+  //           'Account Holder Name',
+  //           _holderNameController,
+  //           keyboardType: TextInputType.text,
+  //           isRequired: true,
+  //           isUpperCase: true,
+  //           focusNode: _holderNameFocus,
+  //           nextFocusNode: _bankAccountFocus,
+  //         ),
+  //         const SizedBox(height: 16),
+  //         _buildTextField(
+  //           'Bank Account Number',
+  //           _bankAccountController,
+  //           keyboardType: TextInputType.number,
+  //           isRequired: true,
+  //           focusNode: _bankAccountFocus,
+  //           nextFocusNode: _ifscFocus,
+  //         ),
+  //         const SizedBox(height: 16),
+  //         _buildTextField(
+  //           'IFSC Code',
+  //           _ifscController,
+  //           isRequired: true,
+  //           isUpperCase: true,
+  //           focusNode: _ifscFocus,
+  //           nextFocusNode: _branchNameFocus,
+  //         ),
+  //         const SizedBox(height: 16),
+  //         _buildTextField(
+  //           'Branch Name',
+  //           _branchNameController,
+  //           keyboardType: TextInputType.text,
+  //           isRequired: true,
+  //           isUpperCase: true,
+  //           focusNode: _branchNameFocus,
+  //           nextFocusNode: _branchCodeFocus,
+  //         ),
+  //         const SizedBox(height: 16),
+  //         _buildTextField(
+  //           'Branch Code',
+  //           _branchCodeController,
+  //           keyboardType: TextInputType.visiblePassword,
+  //           isRequired: true,
+  //           isUpperCase: true,
+  //           focusNode: _branchCodeFocus,
+  //         ),
+  //       ],
+  //     );
+  //   } else {
+  //     return Column(
+  //       children: [
+  //         Row(
+  //           children: [
+  //             Expanded(
+  //               child: _buildTextField(
+  //                 'Account Holder Name',
+  //                 _holderNameController,
+  //                 keyboardType: TextInputType.text,
+  //                 isRequired: true,
+  //                 isUpperCase: true,
+  //                 focusNode: _holderNameFocus,
+  //                 nextFocusNode: _bankAccountFocus,
+  //               ),
+  //             ),
+  //             const SizedBox(width: 20),
+  //             Expanded(
+  //               child: _buildTextField(
+  //                 'Bank Account Number',
+  //                 _bankAccountController,
+  //                 keyboardType: TextInputType.number,
+  //                 isRequired: true,
+  //                 focusNode: _bankAccountFocus,
+  //                 nextFocusNode: _ifscFocus,
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //         const SizedBox(height: 30),
+  //         _buildTextField(
+  //           'IFSC Code',
+  //           _ifscController,
+  //           isRequired: true,
+  //           isUpperCase: true,
+  //           focusNode: _ifscFocus,
+  //           nextFocusNode: _branchNameFocus,
+  //         ),
+  //         const SizedBox(height: 30),
+  //         Row(
+  //           children: [
+  //             Expanded(
+  //               child: _buildTextField(
+  //                 'Branch Name',
+  //                 _branchNameController,
+  //                 keyboardType: TextInputType.text,
+  //                 isRequired: true,
+  //                 isUpperCase: true,
+  //                 focusNode: _branchNameFocus,
+  //                 nextFocusNode: _branchCodeFocus,
+  //               ),
+  //             ),
+  //             const SizedBox(width: 20),
+  //             Expanded(
+  //               child: _buildTextField(
+  //                 'Branch Code',
+  //                 _branchCodeController,
+  //                 keyboardType: TextInputType.visiblePassword,
+  //                 isRequired: true,
+  //                 isUpperCase: true,
+  //                 focusNode: _branchCodeFocus,
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //       ],
+  //     );
+  //   }
+  // }
 
   Widget _buildStep3Fields(bool isMobile) {
     if (isMobile) {
@@ -2245,7 +2449,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
           onPressed:
               _isSubmitting
                   ? null
-                  : (currentStep == 4 ? _submitForm : _nextStep),
+                  : (currentStep == 3 ? _submitForm : _nextStep),
           style: ElevatedButton.styleFrom(
             backgroundColor: kPrimaryColor,
             shape: RoundedRectangleBorder(
@@ -2278,7 +2482,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                     ],
                   )
                   : Text(
-                    currentStep == 4 ? 'Submit' : 'Next',
+                    currentStep == 3 ? 'Submit' : 'Next',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -2297,8 +2501,15 @@ class _CustomerFormScreenState extends State<CustomerForm> {
     _lastNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    // _aadhaarController.dispose();
+    // _panController.dispose();
 
-    // Step 2 controllers
+    // // Step 2 controllers
+    // _holderNameController.dispose();
+    // _bankAccountController.dispose();
+    // _ifscController.dispose();
+    // _branchNameController.dispose();
+    // _branchCodeController.dispose();
 
     // Step 3 controllers
     _cityController.dispose();
@@ -2314,8 +2525,15 @@ class _CustomerFormScreenState extends State<CustomerForm> {
     _lastNameFocus.dispose();
     _emailFocus.dispose();
     _phoneFocus.dispose();
+    // _aadhaarFocus.dispose();
+    // _panFocus.dispose();
 
-    // Focus Nodes Step 2
+    // // Focus Nodes Step 2
+    // _holderNameFocus.dispose();
+    // _bankAccountFocus.dispose();
+    // _ifscFocus.dispose();
+    // _branchNameFocus.dispose();
+    // _branchCodeFocus.dispose();
 
     // Focus Nodes Step 3
     _cityFocus.dispose();
