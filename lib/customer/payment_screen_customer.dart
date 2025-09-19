@@ -1,5 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:gold_pos/auth_helper.dart';
+import 'package:gold_pos/models/customer_model.dart';
+import 'package:http/http.dart' as http;
 import 'dart:ui' show ImageFilter;
 import '../../utils/avathar.dart';
 import '../../utils/colors.dart';
@@ -29,22 +34,90 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class Customer {
-  final String id;
-  final String name;
-  final String phone;
-  final DateTime schemeStartDate;
-  final DateTime nextPayableDate;
-  final double schemeAmount;
+class PaymentService {
+  static const String baseUrl = 'http://localhost:2025';
 
-  const Customer({
-    required this.id,
-    required this.name,
-    required this.phone,
-    required this.schemeStartDate,
-    required this.nextPayableDate,
-    required this.schemeAmount,
-  });
+  // Get headers with auth token from SharedPreferences
+  static Future<Map<String, String>> _getHeaders() async {
+    final token = await AuthHelper.getToken();
+    return {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
+  // Existing makePayment method
+  static Future<Map<String, dynamic>> makePayment({
+    required String customerId,
+    required double amount,
+    required String month,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/payments'),
+        headers: headers,
+        body: jsonEncode({
+          'customerId': customerId,
+          'amount': amount,
+          'month': month,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': jsonDecode(response.body)};
+      } else {
+        final errorBody = jsonDecode(response.body);
+        return {
+          'success': false,
+          'error': errorBody['message'] ?? 'Payment failed',
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'error': 'Network error: ${e.toString()}'};
+    }
+  }
+
+  // Get all customers
+  static Future<Map<String, dynamic>> getCustomers() async {
+    try {
+      final headers = await _getHeaders();
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/customers'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': jsonDecode(response.body)};
+      } else {
+        return {'success': false, 'error': 'Failed to fetch customers'};
+      }
+    } catch (e) {
+      return {'success': false, 'error': 'Network error: ${e.toString()}'};
+    }
+  }
+
+  // Get single customer details with updated wallet info
+  static Future<Map<String, dynamic>> getCustomerById(String customerId) async {
+    try {
+      final headers = await _getHeaders();
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/customers/$customerId'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': jsonDecode(response.body)};
+      } else {
+        return {'success': false, 'error': 'Failed to fetch customer details'};
+      }
+    } catch (e) {
+      return {'success': false, 'error': 'Network error: ${e.toString()}'};
+    }
+  }
 }
 
 enum PaymentType { online, offline }
@@ -57,34 +130,8 @@ class CustomerPaymentScreen extends StatefulWidget {
 }
 
 class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
-  // Mock data; replace with your API results
-  final List<Customer> _allCustomers = [
-    Customer(
-      id: 'C001',
-      name: 'Aarav Sharma',
-      phone: '9876543210',
-      schemeStartDate: DateTime(2025, 1, 15),
-      nextPayableDate: DateTime(2025, 2, 15),
-      schemeAmount: 1000,
-    ),
-    Customer(
-      id: 'C002',
-      name: 'Diya Nair',
-      phone: '9123456780',
-      schemeStartDate: DateTime(2025, 3, 1),
-      nextPayableDate: DateTime(2025, 4, 1),
-      schemeAmount: 1500,
-    ),
-    Customer(
-      id: 'C003',
-      name: 'Rahul Kumar',
-      phone: '9000000001',
-      schemeStartDate: DateTime(2024, 12, 5),
-      nextPayableDate: DateTime(2025, 1, 5),
-      schemeAmount: 2000,
-    ),
-  ];
-
+  List<Customer> _allCustomers = [];
+  bool _isLoading = true;
   String _query = '';
   Customer? _selectedCustomer;
 
@@ -105,10 +152,48 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize with default values to prevent null errors
     _paymentType = PaymentType.offline;
     _selectedDate = DateTime.now();
     _dateCtrl.text = _formatDate(DateTime.now());
+    _loadCustomers();
+  }
+
+  Future<void> _loadCustomers() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final result = await PaymentService.getCustomers();
+
+      if (result['success']) {
+        final List<dynamic> customerData =
+            result['data'] is List
+                ? result['data']
+                : result['data']['customers'] ??
+                    []; // Handle different response structures
+
+        _allCustomers =
+            customerData.map((json) => Customer.fromJson(json)).toList();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load customers: ${result['error']}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        // Keep empty list if API fails
+        _allCustomers = [];
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error loading customers: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      _allCustomers = [];
+    }
+
+    setState(() => _isLoading = false);
   }
 
   @override
@@ -139,7 +224,30 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
     return '${d.day.toString().padLeft(2, '0')}-${d.month.toString().padLeft(2, '0')}-${d.year}';
   }
 
-  void _onSubmit() {
+  Future<void> _refreshCustomerData(String customerId) async {
+    try {
+      final result = await PaymentService.getCustomerById(customerId);
+
+      if (result['success']) {
+        final updatedCustomer = Customer.fromJson(result['data']);
+
+        setState(() {
+          // Update the customer in the list
+          final index = _allCustomers.indexWhere((c) => c.id == customerId);
+          if (index != -1) {
+            _allCustomers[index] = updatedCustomer;
+            _selectedCustomer = updatedCustomer;
+            // Update amount field with new scheme amount if needed
+            _amountCtrl.text = updatedCustomer.schemeAmount.toStringAsFixed(0);
+          }
+        });
+      }
+    } catch (e) {
+      print('Error refreshing customer data: $e');
+    }
+  }
+
+  void _onSubmit() async {
     if (_selectedCustomer == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a customer.')),
@@ -149,7 +257,6 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
 
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    // Ensure all required values are not null before creating PaymentDetails
     if (_paymentType == null || _selectedDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please complete all fields.')),
@@ -157,22 +264,85 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
       return;
     }
 
-    final details = PaymentDetails(
-      customer: _selectedCustomer!,
-      amount: double.parse(_amountCtrl.text),
-      paymentType: _paymentType!,
-      paymentDate: _selectedDate!,
+    // ✅ NEW: Check if payment is within 20 days before emaidate
+    if (_selectedCustomer!.emaidate != null) {
+      final now = DateTime.now();
+      final nextPayableDate = _selectedCustomer!.emaidate!;
+      final twentyDaysBefore = DateTime(
+        nextPayableDate.year,
+        nextPayableDate.month,
+        nextPayableDate.day - 20,
+      );
+
+      if (now.isBefore(twentyDaysBefore)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Payment can only be made 20 days before next payable date (${_formatDate(nextPayableDate)}). '
+              'You can make payment from ${_formatDate(twentyDaysBefore)} onwards.',
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+        return;
+      }
+    }
+
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
     );
 
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => SuccessScreen(details: details)));
+    try {
+      // Use customer's emaidate for month calculation
+      final emiDate = _selectedCustomer!.emaidate ?? _selectedDate!;
+      final month =
+          '${emiDate.year}-${emiDate.month.toString().padLeft(2, '0')}';
+
+      final result = await PaymentService.makePayment(
+        customerId: _selectedCustomer!.id,
+        amount: double.parse(_amountCtrl.text),
+        month: month,
+      );
+
+      Navigator.of(context).pop(); // Close loading dialog
+
+      if (result['success']) {
+        final details = PaymentDetails(
+          customer: _selectedCustomer!,
+          amount: double.parse(_amountCtrl.text),
+          paymentType: _paymentType!,
+          paymentDate: _selectedDate!,
+          apiResponse: result['data'],
+        );
+
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => SuccessScreen(details: details)),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Payment failed: ${result['error']}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      Navigator.of(context).pop(); // Close loading dialog
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
     return Scaffold(
       backgroundColor: kBackgroundColor,
       body: SafeArea(
@@ -187,18 +357,18 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
                 children: [
                   Expanded(
                     child: Container(
-                      padding: EdgeInsets.symmetric(
+                      padding: const EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 7,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Color(0xFFE5E7EB)),
+                        border: Border.all(color: const Color(0xFFE5E7EB)),
                       ),
                       child: TextField(
                         cursorColor: kPrimaryColor,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           isDense: true,
                           hintText: 'Search customer name or phone',
                           hintStyle: TextStyle(
@@ -216,39 +386,51 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(width: 12),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Color(0xFFE5E7EB)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.reset_tv,
-                          size: 16,
-                          color: Color(0xFF6B7280),
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          'return bill',
-                          style: TextStyle(
-                            color: Color(0xFF374151),
-                            fontWeight: FontWeight.w500,
+                  const SizedBox(width: 12),
+                  GestureDetector(
+                    onTap: _loadCustomers,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE5E7EB)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.refresh,
+                            size: 16,
+                            color:
+                                _isLoading
+                                    ? kPrimaryColor
+                                    : const Color(0xFF6B7280),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 8),
+                          Text(
+                            'refresh',
+                            style: TextStyle(
+                              color:
+                                  _isLoading
+                                      ? kPrimaryColor
+                                      : Color(0xFF374151),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
 
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
 
             // Results List
             Expanded(
@@ -263,11 +445,13 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
                       color: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        side: BorderSide(color: Colors.black12),
+                        side: const BorderSide(color: Colors.black12),
                         borderRadius: BorderRadius.circular(15),
                       ),
                       child:
-                          _filteredCustomers.isEmpty
+                          _isLoading
+                              ? const Center(child: CircularProgressIndicator())
+                              : _filteredCustomers.isEmpty
                               ? const Center(
                                 child: Padding(
                                   padding: EdgeInsets.all(24.0),
@@ -277,7 +461,7 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
                               : ListView.separated(
                                 itemCount: _filteredCustomers.length,
                                 separatorBuilder:
-                                    (_, _) => Divider(
+                                    (_, __) => const Divider(
                                       height: 1,
                                       color: Colors.black12,
                                     ),
@@ -305,7 +489,7 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
                                     ),
                                     trailing:
                                         isSelected
-                                            ? Icon(
+                                            ? const Icon(
                                               Icons.check_circle,
                                               color: kPrimaryColor,
                                             )
@@ -453,6 +637,8 @@ class _PaymentFormState extends State<_PaymentForm> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        _buildPaymentRestrictionNotice(cs),
+                        SizedBox(height: 24),
                         _buildCustomerHeader(cs, isDark),
                         const SizedBox(height: 24),
                         _buildSchemeInfo(cs),
@@ -576,8 +762,8 @@ class _PaymentFormState extends State<_PaymentForm> {
   }
 
   Widget _buildSchemeInfo(ColorScheme cs) {
-    final startDate = widget.selectedCustomer.schemeStartDate;
-    final nextPayableDate = widget.selectedCustomer.nextPayableDate;
+    final startDate = widget.selectedCustomer.date;
+    final nextPayableDate = widget.selectedCustomer.emaidate;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -609,7 +795,7 @@ class _PaymentFormState extends State<_PaymentForm> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Scheme started: ${_formatDate(startDate)}',
+                  'Scheme started : ${_formatDate(startDate)}',
                   style: TextStyle(
                     color: cs.onSurfaceVariant,
                     fontWeight: FontWeight.w600,
@@ -638,7 +824,7 @@ class _PaymentFormState extends State<_PaymentForm> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Next payable date: ${_formatDate(nextPayableDate)}',
+                  'Next Due date : ${_formatDate(nextPayableDate)}',
                   style: TextStyle(
                     color: cs.onSurfaceVariant,
                     fontWeight: FontWeight.w600,
@@ -940,53 +1126,125 @@ class _PaymentFormState extends State<_PaymentForm> {
   }
 
   Widget _buildSubmitButton(ColorScheme cs, bool isDark) {
-    return Container(
-      width: double.infinity,
-      height: 40,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [kBlueColor, kBlueColor.withOpacity(0.8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: cs.primary.withOpacity(0.3),
-            blurRadius: 15,
-            spreadRadius: 1,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: ElevatedButton(
-        onPressed: () {
-          FocusScope.of(context).unfocus();
-          widget.onSubmit();
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
+    return AbsorbPointer(
+      absorbing: !_isPaymentAllowed, // Disable button if payment not allowed
+      child: Opacity(
+        opacity:
+            _isPaymentAllowed
+                ? 1.0
+                : 0.5, // Make button semi-transparent if disabled
+        child: Container(
+          width: double.infinity,
+          height: 40,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors:
+                  _isPaymentAllowed
+                      ? [kBlueColor, kBlueColor.withOpacity(0.8)]
+                      : [
+                        Colors.grey,
+                        Colors.grey.withOpacity(0.8),
+                      ], // Grey when disabled
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
             borderRadius: BorderRadius.circular(15),
+            boxShadow:
+                _isPaymentAllowed
+                    ? [
+                      BoxShadow(
+                        color: cs.primary.withOpacity(0.3),
+                        blurRadius: 15,
+                        spreadRadius: 1,
+                        offset: const Offset(0, 8),
+                      ),
+                    ]
+                    : [],
           ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.check_circle_rounded, color: cs.onPrimary, size: 22),
-            const SizedBox(width: 12),
-            Text(
-              'Submit Payment',
-              style: TextStyle(
-                color: cs.onPrimary,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                letterSpacing: 0.5,
+          child: ElevatedButton(
+            onPressed:
+                _isPaymentAllowed
+                    ? () {
+                      FocusScope.of(context).unfocus();
+                      widget.onSubmit();
+                    }
+                    : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
               ),
             ),
-          ],
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  _isPaymentAllowed
+                      ? Icons.check_circle_rounded
+                      : Icons.schedule,
+                  color: _isPaymentAllowed ? cs.onPrimary : Colors.grey[600],
+                  size: 22,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  _isPaymentAllowed
+                      ? 'Submit Payment'
+                      : 'Payment Not Available',
+                  style: TextStyle(
+                    color: _isPaymentAllowed ? cs.onPrimary : Colors.grey[600],
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
+      ),
+    );
+  }
+
+  bool get _isPaymentAllowed {
+    if (widget.selectedCustomer.emaidate == null) return true;
+    final now = DateTime.now();
+    final twentyDaysBefore = widget.selectedCustomer.emaidate!.subtract(
+      const Duration(days: 20),
+    );
+    return now.isAfter(twentyDaysBefore) ||
+        now.isAtSameMomentAs(twentyDaysBefore);
+  }
+
+  Widget _buildPaymentRestrictionNotice(ColorScheme cs) {
+    if (_isPaymentAllowed) return const SizedBox.shrink();
+
+    final emiDate = widget.selectedCustomer.emaidate!;
+    final allowedDate = emiDate.subtract(const Duration(days: 20));
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.orange.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.schedule, color: Colors.orange[800], size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Payment can be made from ${_formatDate(allowedDate)} onwards',
+              style: TextStyle(
+                color: Colors.orange[800],
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1001,12 +1259,14 @@ class PaymentDetails {
   final double amount;
   final PaymentType paymentType;
   final DateTime paymentDate;
+  final Map<String, dynamic>? apiResponse;
 
   PaymentDetails({
     required this.customer,
     required this.amount,
     required this.paymentType,
     required this.paymentDate,
+    this.apiResponse,
   });
 }
 
@@ -1017,8 +1277,10 @@ class SuccessScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final apiData = details.apiResponse;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Success')),
+      appBar: AppBar(title: const Text('Payment Success')),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -1029,24 +1291,48 @@ class SuccessScreen extends StatelessWidget {
               Icon(Icons.verified, size: 96, color: cs.primary),
               const SizedBox(height: 16),
               const Text(
-                'Payment Saved Successfully',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                'Payment Successful!',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
+
+              // Customer info
               Text(
-                'Customer: ${details.customer.name} (${details.customer.phone})',
+                'Customer: ${details.customer.name}',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 4),
+              Text('Phone: ${details.customer.phone}'),
+              const SizedBox(height: 8),
+
+              // Payment details
               Text('Amount: ₹${details.amount.toStringAsFixed(0)}'),
-              const SizedBox(height: 4),
               Text(
                 'Payment Type: ${details.paymentType == PaymentType.online ? 'Online' : 'Offline'}',
               ),
-              const SizedBox(height: 4),
               Text('Date: ${_formatDate(details.paymentDate)}'),
-              const SizedBox(height: 24),
+
+              // API response details
+              if (apiData != null) ...[
+                const SizedBox(height: 16),
+                if (apiData['message'] != null)
+                  Text(
+                    apiData['message'],
+                    style: TextStyle(
+                      color: cs.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                if (apiData['nextDueDate'] != null)
+                  Text('Next Due Date: ${apiData['nextDueDate']}'),
+              ],
+
+              const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(

@@ -40,6 +40,8 @@ class Shareholder {
   final String? city;
   final String? state;
   final String? address;
+  final String? pin;
+  final String? password;
   final String role;
   final bool active;
   final DateTime createdAt;
@@ -59,6 +61,8 @@ class Shareholder {
     this.city,
     this.state,
     this.address,
+    this.pin,
+    this.password,
     required this.role,
     required this.active,
     required this.createdAt,
@@ -79,7 +83,9 @@ class Shareholder {
       branch: json['branch']?.toString(),
       city: json['city']?.toString(),
       state: json['state']?.toString(),
-      address: json['addrass']?.toString(), // Note: 'addrass' typo in your API
+      address: json['addrass']?.toString(), // Corrected typo
+      pin: json['pin']?.toString(),
+      password: json['password']?.toString() ?? '',
       role: json['role']?.toString() ?? '',
       active:
           json['active'] is bool
@@ -808,6 +814,11 @@ class _ShareholderManagementScreenState
         _buildInfoItem("City", shareholder.city ?? 'N/A'),
         _buildInfoItem("Aadhaar No", shareholder.adhar ?? 'N/A'),
         _buildInfoItem("Pan No", shareholder.pancard ?? 'N/A'),
+        _buildInfoItem('ACCOUNT NUMBER ', shareholder.acc ?? 'N/A'),
+        _buildInfoItem('HOLDER NAME', shareholder.bank ?? 'N/A'),
+        _buildInfoItem('BANK BRANCH', shareholder.branch ?? 'N/A'),
+        _buildInfoItem('IFSC CODE', shareholder.ifsc ?? 'N/A'),
+        _buildInfoItem('Password', shareholder.password ?? 'N/A'),
       ],
     );
   }

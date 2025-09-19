@@ -113,7 +113,6 @@ class ApiService {
     required String city,
     required String state,
     required String address,
-    required String password,
     String? parentId,
   }) async {
     try {
@@ -135,14 +134,14 @@ class ApiService {
         'phone': phone,
         'adhar': aadhaar,
         'pancard': pan,
+        'dob': dob,
         'Bank': holderName,
         'IFSC': ifsc,
         'acc': bankAccount,
         'branch': branchName,
         'city': city,
         'state': state,
-        'addrass': address, // API has typo
-        'password': password,
+        'addrass': address,
         'role': 'SHAREHOLDER',
       };
 
@@ -154,7 +153,7 @@ class ApiService {
         url,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token', // Add Bearer token
+          'Authorization': 'Bearer $token',
         },
         body: json.encode(requestBody),
       );
@@ -163,10 +162,41 @@ class ApiService {
       print('Response Body: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = json.decode(response.body);
+
+        // Check if email was sent successfully (same pattern as createCustomer)
+        bool emailSent = responseData['emailSent'] ?? false;
+
+        if (!emailSent) {
+          return {
+            'success': false,
+            'error': 'Email validation failed',
+            'message':
+                responseData['emailError'] ??
+                'Failed to send confirmation email. Shareholder account was not created.',
+            'emailFailed': true,
+          };
+        }
+
         return {
           'success': true,
-          'data': json.decode(response.body),
-          'message': 'Shareholder created successfully',
+          'data': responseData['data'] ?? responseData,
+          'message':
+              'Shareholder created successfully and confirmation email sent',
+          'emailSent': true,
+        };
+      } else if (response.statusCode == 400) {
+        final errorData = json.decode(response.body);
+        bool isEmailError = errorData['emailSent'] == false;
+
+        return {
+          'success': false,
+          'error':
+              isEmailError
+                  ? 'Email validation failed'
+                  : 'HTTP ${response.statusCode}',
+          'message': errorData['message'] ?? 'Failed to create shareholder',
+          'emailFailed': isEmailError,
         };
       } else if (response.statusCode == 401) {
         // Token might be expired, clear it
@@ -302,10 +332,6 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
         city: _cityController.text,
         state: _stateController.text,
         address: _addressController.text,
-        password:
-            _passwordController.text.isNotEmpty
-                ? _passwordController.text
-                : ApiService.generateTemporaryPassword(),
       );
 
       Navigator.of(context).pop(); // Close loading dialog
@@ -314,16 +340,16 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
         _isSubmitting = false;
       });
 
-      if (result['success']) {
+      if (result['success'] == true && result['emailSent'] == true) {
         _showSuccessDialog(result['data']);
+      } else if (result['emailFailed'] == true ||
+          result['error'] == 'Email validation failed') {
+        _showEmailErrorDialog(result['message']);
+      } else if (result['error'] == 'Authentication required' ||
+          result['error'] == 'Authentication expired') {
+        _showLoginRequiredDialog();
       } else {
-        // Handle authentication errors specifically
-        if (result['error'] == 'Authentication required' ||
-            result['error'] == 'Authentication expired') {
-          _showLoginRequiredDialog();
-        } else {
-          _showErrorDialog(result['message'] ?? 'Unknown error occurred');
-        }
+        _showErrorDialog(result['message'] ?? 'Unknown error occurred');
       }
     } catch (e) {
       Navigator.of(context).pop(); // Close loading dialog
@@ -332,6 +358,108 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
       });
       _showErrorDialog('Failed to submit form: $e');
     }
+  }
+
+  void _showEmailErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Icon(
+                  Icons.email_outlined,
+                  color: Colors.red,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Email Validation Failed',
+                  style: TextStyle(fontSize: 18),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(message, style: const TextStyle(fontSize: 14)),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.warning_outlined,
+                      color: Colors.red,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'No customer account was created because the confirmation email could not be sent. Please verify the email address and try again.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.red[700],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Go back to email field for correction
+                setState(() {
+                  currentStep = 1;
+                });
+              },
+              child: const Text(
+                'Edit Email',
+                style: TextStyle(color: kPrimaryColor),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kPrimaryColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                'Try Again',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _showLoginRequiredDialog() {
