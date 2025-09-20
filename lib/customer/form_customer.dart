@@ -130,7 +130,7 @@ class ApiService {
     required String address,
     required double amount,
     required String date,
-    required String emaidate, // <-- DELETE THIS LINE
+    required String emaidate,
   }) async {
     try {
       final token = await getToken();
@@ -308,7 +308,6 @@ class _CustomerFormScreenState extends State<CustomerForm> {
   final _stateFocus = FocusNode();
   final _addressFocus = FocusNode();
 
-  bool _isPasswordVisible = false;
   bool _isSubmitting = false;
 
   void _nextStep() {
