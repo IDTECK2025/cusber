@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'dart:io';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_phosphor_icons/flutter_phosphor_icons.dart';
@@ -115,7 +119,6 @@ class ApiService {
     String? parentId,
   }) async {
     try {
-      // Get the authentication token
       final token = await getToken();
       if (token == null || token.isEmpty) {
         return {
@@ -143,9 +146,13 @@ class ApiService {
         'role': 'SHAREHOLDER',
       };
 
+      // Add parent ID if provided
       if (parentId != null && parentId.isNotEmpty) {
         requestBody['parent'] = parentId;
       }
+
+      print('📡 Sending shareholder data to: $url');
+      print('📤 Request body: ${json.encode(requestBody)}');
 
       final response = await http.post(
         url,
@@ -156,61 +163,42 @@ class ApiService {
         body: json.encode(requestBody),
       );
 
-      print('Response Status: ${response.statusCode}');
-      print('Response Body: ${response.body}');
+      print('📡 Response Status: ${response.statusCode}');
+      print('📥 Response Body: ${response.body}');
 
+      // Success response handling
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = json.decode(response.body);
-
-        // Check if email was sent successfully (same pattern as createCustomer)
-        bool emailSent = responseData['emailSent'] ?? false;
-
-        if (!emailSent) {
-          return {
-            'success': false,
-            'error': 'Email validation failed',
-            'message':
-                responseData['emailError'] ??
-                'Failed to send confirmation email. Shareholder account was not created.',
-            'emailFailed': true,
-          };
-        }
 
         return {
           'success': true,
           'data': responseData['data'] ?? responseData,
-          'message':
-              'Shareholder created successfully and confirmation email sent',
-          'emailSent': true,
+          'message': 'Shareholder created successfully',
         };
-      } else if (response.statusCode == 400) {
-        final errorData = json.decode(response.body);
-        bool isEmailError = errorData['emailSent'] == false;
-
-        return {
-          'success': false,
-          'error':
-              isEmailError
-                  ? 'Email validation failed'
-                  : 'HTTP ${response.statusCode}',
-          'message': errorData['message'] ?? 'Failed to create shareholder',
-          'emailFailed': isEmailError,
-        };
-      } else if (response.statusCode == 401) {
-        // Token might be expired, clear it
+      }
+      // Authentication expired
+      else if (response.statusCode == 401) {
         await clearToken();
         return {
           'success': false,
           'error': 'Authentication expired',
           'message': 'Please login again',
         };
-      } else {
-        String errorMessage = 'Failed to create shareholder';
+      }
+      // Client errors (400-499)
+      else if (response.statusCode >= 400 && response.statusCode < 500) {
+        String errorMessage = 'Invalid data provided';
         try {
           final errorData = json.decode(response.body);
-          errorMessage = errorData['message'] ?? errorMessage;
+          errorMessage =
+              errorData['message'] ??
+              errorData['error'] ??
+              'Request failed with status ${response.statusCode}';
         } catch (e) {
-          errorMessage = response.body;
+          errorMessage =
+              response.body.isNotEmpty
+                  ? response.body
+                  : 'Invalid request (${response.statusCode})';
         }
 
         return {
@@ -219,18 +207,68 @@ class ApiService {
           'message': errorMessage,
         };
       }
-    } catch (e) {
-      print('API Error: $e');
+      // Server errors (500-599)
+      else if (response.statusCode >= 500) {
+        return {
+          'success': false,
+          'error': 'Server error',
+          'message':
+              'Server is temporarily unavailable. Please try again later.',
+        };
+      }
+      // Other status codes
+      else {
+        String errorMessage = 'Request failed';
+        try {
+          final errorData = json.decode(response.body);
+          errorMessage =
+              errorData['message'] ?? errorData['error'] ?? errorMessage;
+        } catch (e) {
+          errorMessage = 'Unexpected response (${response.statusCode})';
+        }
+
+        return {
+          'success': false,
+          'error': 'HTTP ${response.statusCode}',
+          'message': errorMessage,
+        };
+      }
+    }
+    // Network connectivity issues
+    catch (e) {
+      print('❌ API Error: $e');
+
+      String userMessage;
+      String errorType;
+
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('HandshakeException')) {
+        userMessage =
+            'No internet connection. Please check your network and try again.';
+        errorType = 'Network error';
+      } else if (e.toString().contains('TimeoutException')) {
+        userMessage = 'Request timed out. Please try again.';
+        errorType = 'Timeout error';
+      } else if (e.toString().contains('FormatException')) {
+        userMessage = 'Invalid server response. Please try again.';
+        errorType = 'Format error';
+      } else {
+        userMessage = 'Something went wrong. Please try again.';
+        errorType = 'Unknown error';
+      }
+
       return {
         'success': false,
-        'error': 'Network error: $e',
-        'message': 'Please check your internet connection and try again',
+        'error': '$errorType: $e',
+        'message': userMessage,
       };
     }
   }
 
   static String generateTemporaryPassword() {
-    return 'Temp@${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
+    final random = Random();
+    final randomNumber = 100000 + random.nextInt(900000);
+    return 'EMPJR-$randomNumber';
   }
 }
 
@@ -316,6 +354,7 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
       _isSubmitting = true;
     });
 
+    // Show loading dialog
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -325,7 +364,7 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
             children: [
               CircularProgressIndicator(color: kPrimaryColor),
               SizedBox(width: 20),
-              Text('Submitting your information...'),
+              Text('Creating shareholder account...'),
             ],
           ),
         );
@@ -334,148 +373,68 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
 
     try {
       final result = await ApiService.createShareholder(
-        firstName: _firstNameController.text,
-        lastName: _lastNameController.text,
-        email: _emailController.text,
-        phone: _phoneController.text,
-        aadhaar: _aadhaarController.text,
-        pan: _panController.text,
-        holderName: _holderNameController.text,
-        bankAccount: _bankAccountController.text,
-        ifsc: _ifscController.text,
-        branchName: _branchNameController.text,
-        branchCode: _branchCodeController.text,
-        city: _cityController.text,
-        state: _stateController.text,
-        address: _addressController.text,
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        email: _emailController.text.trim(),
+        phone: _phoneController.text.trim(),
+        aadhaar: _aadhaarController.text.trim(),
+        pan: _panController.text.trim(),
+        holderName: _holderNameController.text.trim(),
+        bankAccount: _bankAccountController.text.trim(),
+        ifsc: _ifscController.text.trim(),
+        branchName: _branchNameController.text.trim(),
+        branchCode: _branchCodeController.text.trim(),
+        city: _cityController.text.trim(),
+        state: _stateController.text?.trim() ?? 'Kerala',
+        address: _addressController.text.trim(),
       );
 
-      Navigator.of(context).pop(); // Close loading dialog
+      // Close loading dialog
+      Navigator.of(context).pop();
 
       setState(() {
         _isSubmitting = false;
       });
 
-      if (result['success'] == true && result['emailSent'] == true) {
+      // CLEAN LOGIC: Only success or auth errors
+      if (result['success'] == true) {
         _showSuccessDialog(result['data']);
-      } else if (result['emailFailed'] == true ||
-          result['error'] == 'Email validation failed') {
-        _showEmailErrorDialog(result['message']);
       } else if (result['error'] == 'Authentication required' ||
           result['error'] == 'Authentication expired') {
         _showLoginRequiredDialog();
       } else {
         _showErrorDialog(result['message'] ?? 'Unknown error occurred');
       }
-    } catch (e) {
+    } on SocketException {
       Navigator.of(context).pop(); // Close loading dialog
       setState(() {
         _isSubmitting = false;
       });
-      _showErrorDialog('Failed to submit form: $e');
-    }
-  }
+      _showErrorDialog(
+        'No internet connection. Please check your network and try again.',
+      );
+    } on TimeoutException {
+      Navigator.of(context).pop(); // Close loading dialog
+      setState(() {
+        _isSubmitting = false;
+      });
+      _showErrorDialog('Request timed out. Please try again.');
+    } on FormatException {
+      Navigator.of(context).pop(); // Close loading dialog
+      setState(() {
+        _isSubmitting = false;
+      });
+      _showErrorDialog('Invalid server response. Please try again.');
+    } catch (e) {
+      print('❌ Form submission error: $e');
+      Navigator.of(context).pop(); // Close loading dialog
 
-  void _showEmailErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Icon(
-                  Icons.email_outlined,
-                  color: Colors.red,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'Email Validation Failed',
-                  style: TextStyle(fontSize: 18),
-                ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(message, style: const TextStyle(fontSize: 14)),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.warning_outlined,
-                      color: Colors.red,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'No customer account was created because the confirmation email could not be sent. Please verify the email address and try again.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.red[700],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                // Go back to email field for correction
-                setState(() {
-                  currentStep = 1;
-                });
-              },
-              child: const Text(
-                'Edit Email',
-                style: TextStyle(color: kPrimaryColor),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: kPrimaryColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                'Try Again',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
-        );
-      },
-    );
+      setState(() {
+        _isSubmitting = false;
+      });
+
+      _showErrorDialog('Failed to submit form: ${e.toString()}');
+    }
   }
 
   void _showLoginRequiredDialog() {
@@ -483,22 +442,30 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           title: const Text('Authentication Required'),
           content: const Text(
-            'You need to login before creating a shareholder account.',
+            'Please login before creating a shareholder account.',
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                //Navigate to login screen
-                Navigator.pushNamed(context, '/login');
-              },
-              child: const Text('Login'),
-            ),
-            TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.pushNamed(context, '/login');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kPrimaryColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('Login', style: TextStyle(color: Colors.white)),
             ),
           ],
         );
@@ -515,35 +482,40 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          title: Expanded(
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Icon(
-                    Icons.check_circle,
-                    color: Colors.green,
-                    size: 24,
-                  ),
+          title: Row(
+            // FIXED: Removed Expanded wrapper
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: kPrimaryColor.withOpacity(
+                    0.1,
+                  ), // CHANGED: Use kPrimaryColor instead of green
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                const SizedBox(width: 12),
-                const Text(
+                child: const Icon(
+                  Icons.check_circle,
+                  color:
+                      kPrimaryColor, // CHANGED: Use kPrimaryColor instead of green
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                // FIXED: Moved Expanded inside Row
+                child: Text(
                   'Registration Complete!',
                   style: TextStyle(fontSize: 18),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Your information has been successfully submitted and verified.',
+                'Shareholder account has been successfully created.', // SIMPLIFIED: Removed verification text
                 style: TextStyle(fontSize: 14),
               ),
               if (userData != null && userData['_id'] != null) ...[
@@ -573,7 +545,7 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
               onPressed: () {
                 Navigator.of(context).pop();
                 _resetForm();
-                Navigator.pushNamed(context, '/login');
+                Navigator.pushNamed(context, '/shareholder');
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: kPrimaryColor,

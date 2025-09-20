@@ -161,7 +161,7 @@ class ApiService {
         'addrass': address,
         'amount': amount,
         'date': date,
-        'emaidate': date, // FIXED: Use date value for emaidate
+        'emaidate': date,
       };
 
       final response = await http.post(
@@ -179,38 +179,10 @@ class ApiService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = json.decode(response.body);
 
-        bool emailSent = responseData['emailSent'] ?? false;
-
-        if (!emailSent) {
-          return {
-            'success': false,
-            'error': 'Email validation failed',
-            'message':
-                responseData['emailError'] ??
-                'Failed to send confirmation email. Customer account was not created.',
-            'emailFailed': true,
-          };
-        }
-
         return {
           'success': true,
           'data': responseData['data'] ?? responseData,
-          'message':
-              'Customer created successfully and confirmation email sent',
-          'emailSent': true,
-        };
-      } else if (response.statusCode == 400) {
-        final errorData = json.decode(response.body);
-        bool isEmailError = errorData['emailSent'] == false;
-
-        return {
-          'success': false,
-          'error':
-              isEmailError
-                  ? 'Email validation failed'
-                  : 'HTTP ${response.statusCode}',
-          'message': errorData['message'] ?? 'Failed to create customer',
-          'emailFailed': isEmailError,
+          'message': 'Customer created successfully',
         };
       } else if (response.statusCode == 401) {
         await clearToken();
@@ -365,7 +337,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
             children: [
               CircularProgressIndicator(color: kPrimaryColor),
               SizedBox(width: 20),
-              Text('Validating email and creating customer account...'),
+              Text('Creating customer account...'), // Simplified message
             ],
           ),
         );
@@ -380,19 +352,12 @@ class _CustomerFormScreenState extends State<CustomerForm> {
         phone: _phoneController.text,
         nomineeName: _nomineeController.text,
         nomineePhone: _nomineePhoneController.text,
-        // aadhaar: _aadhaarController.text,
-        // pan: _panController.text,
-        // holderName: _holderNameController.text,
-        // bankAccount: _bankAccountController.text,
-        // ifsc: _ifscController.text,
-        // branchName: _branchNameController.text,
-        // branchCode: _branchCodeController.text,
         city: _cityController.text,
         state: _stateController.text ?? 'Kerala',
         address: _addressController.text,
         amount: double.parse(_amountController.text),
         date: formatDate(_dateController.text),
-        emaidate: formatDate(_dateController.text), // <-- DELETE THIS LINE
+        emaidate: formatDate(_dateController.text), // Keep if backend needs it
       );
 
       Navigator.of(context).pop(); // Close loading dialog
@@ -401,11 +366,9 @@ class _CustomerFormScreenState extends State<CustomerForm> {
         _isSubmitting = false;
       });
 
-      if (result['success'] == true && result['emailSent'] == true) {
+      // Simplified success/error handling
+      if (result['success'] == true) {
         _showSuccessDialog(result['data']);
-      } else if (result['emailFailed'] == true ||
-          result['error'] == 'Email validation failed') {
-        _showEmailErrorDialog(result['message']);
       } else if (result['error'] == 'Authentication required' ||
           result['error'] == 'Authentication expired') {
         _showLoginRequiredDialog();
@@ -421,7 +384,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
     }
   }
 
-  void _showEmailErrorDialog(String message) {
+  void _showLoginRequiredDialog() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -429,82 +392,19 @@ class _CustomerFormScreenState extends State<CustomerForm> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Icon(
-                  Icons.email_outlined,
-                  color: Colors.red,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'Email Validation Failed',
-                  style: TextStyle(fontSize: 18),
-                ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(message, style: const TextStyle(fontSize: 14)),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.warning_outlined,
-                      color: Colors.red,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'No customer account was created because the confirmation email could not be sent. Please verify the email address and try again.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.red[700],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          title: const Text('Authentication Required'),
+          content: const Text(
+            'Please login before creating a customer account.',
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                // Go back to email field for correction
-                setState(() {
-                  currentStep = 1;
-                });
-              },
-              child: const Text(
-                'Edit Email',
-                style: TextStyle(color: kPrimaryColor),
-              ),
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
             ),
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
+                Navigator.pushNamed(context, '/login');
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: kPrimaryColor,
@@ -512,38 +412,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text(
-                'Try Again',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showLoginRequiredDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Authentication Required'),
-          content: const Text(
-            'You need to login before creating a shareholder account.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                //Navigate to login screen
-                Navigator.pushNamed(context, '/login');
-              },
-              child: const Text('Login'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              child: const Text('Login', style: TextStyle(color: Colors.white)),
             ),
           ],
         );
@@ -577,7 +446,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
               const SizedBox(width: 12),
               const Expanded(
                 child: Text(
-                  'Customer Account Created!',
+                  'Account Created Successfully!',
                   style: TextStyle(fontSize: 18),
                 ),
               ),
@@ -588,7 +457,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Customer account has been successfully created and confirmation emails have been sent.',
+                'Customer account has been successfully created.',
                 style: TextStyle(fontSize: 14),
               ),
               if (userData != null && userData['customerId'] != null) ...[
@@ -611,36 +480,12 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                   ),
                 ),
               ],
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: kPrimaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.mark_email_read, color: kPrimaryColor, size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Welcome email and login PIN have been sent to the customer\'s email address.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: kPrimaryColor,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
           actions: [
             ElevatedButton(
               onPressed: () async {
                 Navigator.of(context).pop();
-                // Show PDF preview dialog
                 await _showPdfPreview(userData);
               },
               style: ElevatedButton.styleFrom(
@@ -650,33 +495,15 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: Row(
+              child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
-                    Icons.picture_as_pdf,
-                    size: 16,
-                    color: Colors.white,
-                  ),
-                  const SizedBox(width: 4),
-                  const Text('View PDF'),
+                  Icon(Icons.picture_as_pdf, size: 16, color: Colors.white),
+                  SizedBox(width: 4),
+                  Text('View PDF'),
                 ],
               ),
             ),
-            // ElevatedButton(
-            //   onPressed: () {
-            //     Navigator.of(context).pop();
-            //     _resetForm();
-            //     Navigator.pushReplacementNamed(context, '/dashboard');
-            //   },
-            //   style: ElevatedButton.styleFrom(
-            //     backgroundColor: kPrimaryColor,
-            //     shape: RoundedRectangleBorder(
-            //       borderRadius: BorderRadius.circular(8),
-            //     ),
-            //   ),
-            //   child: const Text('Done', style: TextStyle(color: Colors.white)),
-            // ),
           ],
         );
       },
@@ -867,11 +694,6 @@ class _CustomerFormScreenState extends State<CustomerForm> {
               ),
               duration: const Duration(seconds: 4),
               backgroundColor: Colors.green,
-              action: SnackBarAction(
-                label: 'Open Folder',
-                textColor: Colors.white,
-                onPressed: () => _openFileLocation(outputFile),
-              ),
             ),
           );
           return;
@@ -880,7 +702,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Save canceled'),
-              backgroundColor: Colors.orange,
+              backgroundColor: kPrimaryColor,
             ),
           );
           return;
@@ -916,31 +738,6 @@ class _CustomerFormScreenState extends State<CustomerForm> {
       print('PDF save error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Save failed: $e'), backgroundColor: Colors.red),
-      );
-    }
-  }
-
-  // Open file location (platform specific)
-  void _openFileLocation(String filePath) {
-    try {
-      final directory = path.dirname(filePath);
-
-      if (Platform.isMacOS) {
-        Process.run('open', [directory]);
-      } else if (Platform.isWindows) {
-        Process.run('explorer', [directory]);
-      } else if (Platform.isLinux) {
-        Process.run('xdg-open', [directory]);
-      } else {
-        print('Open folder not supported on this platform');
-      }
-    } catch (e) {
-      print('Could not open file location: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Could not open folder: $e'),
-          backgroundColor: Colors.orange,
-        ),
       );
     }
   }
@@ -2434,18 +2231,30 @@ class _CustomerFormScreenState extends State<CustomerForm> {
   }
 
   Widget _buildGroupDateDropdown() {
+    DateTime option1, option2;
     DateTime now = DateTime.now();
     int day = now.day;
 
-    DateTime option1;
-    DateTime option2;
-
-    if (day >= 11) {
-      option1 = DateTime(now.year, now.month, 20);
-      option2 = DateTime(now.year, now.month + 1, 10);
-    } else {
+    if (day <= 10) {
       option1 = DateTime(now.year, now.month, 10);
       option2 = DateTime(now.year, now.month, 20);
+    } else if (day <= 20) {
+      option1 = DateTime(now.year, now.month, 20);
+      // Handle December to January transition
+      if (now.month == 12) {
+        option2 = DateTime(now.year + 1, 1, 10);
+      } else {
+        option2 = DateTime(now.year, now.month + 1, 10);
+      }
+    } else {
+      // Handle December to January transition
+      if (now.month == 12) {
+        option1 = DateTime(now.year + 1, 1, 10);
+        option2 = DateTime(now.year + 1, 1, 20);
+      } else {
+        option1 = DateTime(now.year, now.month + 1, 10);
+        option2 = DateTime(now.year, now.month + 1, 20);
+      }
     }
 
     final List<DateTime> options = [option1, option2];

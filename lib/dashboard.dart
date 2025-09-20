@@ -38,7 +38,8 @@ class MyApp extends StatelessWidget {
 }
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  final int? initialIndex;
+  const DashboardScreen({super.key, this.initialIndex = 0});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -58,6 +59,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedIndex = widget.initialIndex!;
     _loadUserData();
   }
 

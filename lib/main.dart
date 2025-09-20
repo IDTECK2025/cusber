@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gold_pos/dashboard.dart';
 import 'package:gold_pos/lock/lock.dart';
+import 'package:gold_pos/shareholder/shareholder_page.dart';
 import 'package:gold_pos/splash/welcome.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -29,6 +30,16 @@ class MyApp extends StatelessWidget {
       routes: {
         '/login': (context) => LoginPage(),
         '/home': (context) => DashboardScreen(),
+        '/dashboard':
+            (context) =>
+                DashboardScreen(initialIndex: 0), // Explicit dashboard page
+        '/customer':
+            (context) => DashboardScreen(initialIndex: 1), // Customer page
+        '/shareholder':
+            (context) =>
+                DashboardScreen(initialIndex: 2), // Shareholder page (index 2)
+        '/agent': (context) => DashboardScreen(initialIndex: 3), // Agent page
+        '/subagent': (context) => DashboardScreen(initialIndex: 4),
       },
     );
   }
