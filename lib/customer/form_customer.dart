@@ -116,6 +116,8 @@ class ApiService {
     required String lastName,
     required String email,
     required String phone,
+    required String nomineeName,
+    required String nomineePhone,
     // required String aadhaar,
     // required String pan,
     // required String holderName,
@@ -145,6 +147,8 @@ class ApiService {
         'name': '$firstName $lastName',
         'email': email,
         'phone': phone,
+        'nominee': nomineeName,
+        'nomineePhone': nomineePhone,
         // 'adharcard': aadhaar,
         // 'pancard': pan,
         // 'address': address,
@@ -261,6 +265,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _nomineeController = TextEditingController();
+  final _nomineePhoneController = TextEditingController();
   // final _aadhaarController = TextEditingController();
   // final _panController = TextEditingController();
 
@@ -285,6 +291,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
   final _lastNameFocus = FocusNode();
   final _emailFocus = FocusNode();
   final _phoneFocus = FocusNode();
+  final _nomineeFocus = FocusNode();
+  final _nomineePhoneFocus = FocusNode();
   // final _aadhaarFocus = FocusNode();
   // final _panFocus = FocusNode();
 
@@ -371,6 +379,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
         lastName: _lastNameController.text,
         email: _emailController.text,
         phone: _phoneController.text,
+        nomineeName: _nomineeController.text,
+        nomineePhone: _nomineePhoneController.text,
         // aadhaar: _aadhaarController.text,
         // pan: _panController.text,
         // holderName: _holderNameController.text,
@@ -1007,6 +1017,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
               ],
               ['Email Address', _emailController.text],
               ['Phone Number', _phoneController.text],
+              ['Nominee Name', _nomineeController.text],
+              ['Nominee Phone', _nomineePhoneController.text],
               // ['Aadhaar Number', _aadhaarController.text],
               // ['PAN Number', _panController.text],
             ]),
@@ -1281,6 +1293,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
     _lastNameController.clear();
     _emailController.clear();
     _phoneController.clear();
+    _nomineeController.clear();
+    _nomineePhoneController.clear();
     // _aadhaarController.clear();
     // _panController.clear();
     // _holderNameController.clear();
@@ -1313,6 +1327,11 @@ class _CustomerFormScreenState extends State<CustomerForm> {
             ),
             _buildConfirmationRow('Email Address', _emailController.text),
             _buildConfirmationRow('Phone Number', _phoneController.text),
+            _buildConfirmationRow('Nominee Name', _nomineeController.text),
+            _buildConfirmationRow(
+              'Nominee Phone',
+              _nomineePhoneController.text,
+            ),
             // _buildConfirmationRow(
             //   'Aadhaar Card Number',
             //   _aadhaarController.text,
@@ -1786,7 +1805,25 @@ class _CustomerFormScreenState extends State<CustomerForm> {
             _phoneController,
             keyboardType: TextInputType.phone,
             isRequired: true,
-            focusNode: _phoneFocus,
+            focusNode: _nomineeFocus,
+            //nextFocusNode: _aadhaarFocus,
+          ),
+          const SizedBox(height: 16),
+          _buildTextField(
+            'Nominee Name',
+            _emailController,
+            keyboardType: TextInputType.text,
+            isRequired: true,
+            focusNode: _nomineeFocus,
+            nextFocusNode: _nomineePhoneFocus,
+          ),
+          const SizedBox(height: 16),
+          _buildTextField(
+            'Nominee Phone Number',
+            _phoneController,
+            keyboardType: TextInputType.phone,
+            isRequired: true,
+            focusNode: _nomineePhoneFocus,
             //nextFocusNode: _aadhaarFocus,
           ),
           // const SizedBox(height: 16),
@@ -1856,12 +1893,37 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                   keyboardType: TextInputType.phone,
                   isRequired: true,
                   focusNode: _phoneFocus,
-                  //nextFocusNode: _aadhaarFocus,
+                  nextFocusNode: _nomineeFocus,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 30),
+          Row(
+            children: [
+              Expanded(
+                child: _buildTextField(
+                  'Nominee Name',
+                  _nomineeController,
+                  keyboardType: TextInputType.text,
+                  isRequired: true,
+                  focusNode: _nomineeFocus,
+                  nextFocusNode: _nomineePhoneFocus,
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: _buildTextField(
+                  'Nominee Phone Number',
+                  _nomineePhoneController,
+                  keyboardType: TextInputType.phone,
+                  isRequired: true,
+                  focusNode: _nomineePhoneFocus,
+                  //nextFocusNode: _aadhaarFocus,
+                ),
+              ),
+            ],
+          ),
           // Row(
           //   children: [
           //     Expanded(
@@ -2171,7 +2233,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
         FilteringTextInputFormatter.allow(RegExp(r'[A-Z0-9]')),
       );
       inputFormatters.add(LengthLimitingTextInputFormatter(10));
-    } else if (label == 'Phone Number') {
+    } else if (label == 'Phone Number' || label == 'Nominee Phone Number') {
       inputFormatters.add(FilteringTextInputFormatter.digitsOnly);
       inputFormatters.add(LengthLimitingTextInputFormatter(10));
     } else if (label == 'Amount') {
@@ -2195,15 +2257,27 @@ class _CustomerFormScreenState extends State<CustomerForm> {
         TextFormField(
           controller: controller,
           focusNode: focusNode,
+          autofocus: true,
           keyboardType: keyboardType,
           cursorColor: kPrimaryColor,
           maxLines: maxLines,
           inputFormatters: inputFormatters,
           textInputAction:
-              maxLines > 1 ? TextInputAction.newline : TextInputAction.next,
+              maxLines > 1
+                  ? TextInputAction.newline
+                  : (nextFocusNode != null
+                      ? TextInputAction.next
+                      : TextInputAction.done),
           onFieldSubmitted: (value) {
             if (nextFocusNode != null) {
               FocusScope.of(context).requestFocus(nextFocusNode);
+            } else {
+              // This is the last field in the step, trigger next step or submit
+              if (currentStep == 3) {
+                _submitForm(); // Submit on final step
+              } else {
+                _nextStep(); // Go to next step
+              }
             }
           },
           validator:
@@ -2227,7 +2301,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                         !RegExp(r'^[A-Z]{4}0[A-Z0-9]{6}').hasMatch(value)) {
                       return 'Enter valid IFSC (e.g. SBIN0000123)';
                     }
-                    if (label == 'Phone Number' && value.length != 10) {
+                    if (label == 'Phone Number' && value.length != 10 ||
+                        label == 'Nominee Phone Number' && value.length != 10) {
                       return 'Phone number should be 10 digits';
                     }
                     if (label == 'Amount') {
@@ -2501,6 +2576,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
     _lastNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _nomineeController.dispose();
+    _nomineePhoneController.dispose();
     // _aadhaarController.dispose();
     // _panController.dispose();
 
@@ -2525,6 +2602,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
     _lastNameFocus.dispose();
     _emailFocus.dispose();
     _phoneFocus.dispose();
+    _nomineeFocus.dispose();
+    _nomineePhoneFocus.dispose();
     // _aadhaarFocus.dispose();
     // _panFocus.dispose();
 

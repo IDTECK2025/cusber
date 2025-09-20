@@ -269,7 +269,26 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
   final _stateController = TextEditingController();
   final _addressController = TextEditingController();
 
-  bool _isPasswordVisible = false;
+  // Focus Nodes for Step 1 - Personal Details
+  final FocusNode _firstNameFocus = FocusNode();
+  final FocusNode _lastNameFocus = FocusNode();
+  final FocusNode _emailFocus = FocusNode();
+  final FocusNode _phoneFocus = FocusNode();
+  final FocusNode _aadhaarFocus = FocusNode();
+  final FocusNode _panFocus = FocusNode();
+
+  // Focus Nodes for Step 2 - Bank Details
+  final FocusNode _holderNameFocus = FocusNode();
+  final FocusNode _bankAccountFocus = FocusNode();
+  final FocusNode _ifscFocus = FocusNode();
+  final FocusNode _branchNameFocus = FocusNode();
+  final FocusNode _branchCodeFocus = FocusNode();
+
+  // Focus Nodes for Step 3 - Address Details
+  final FocusNode _cityFocus = FocusNode();
+  final FocusNode _stateFocus = FocusNode();
+  final FocusNode _addressFocus = FocusNode();
+
   bool _isSubmitting = false;
 
   void _nextStep() {
@@ -1119,15 +1138,29 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
     if (isMobile) {
       return Column(
         children: [
-          _buildTextField('First Name', _firstNameController, isRequired: true),
+          _buildTextField(
+            'First Name',
+            _firstNameController,
+            isRequired: true,
+            focusNode: _firstNameFocus,
+            nextFocusNode: _lastNameFocus,
+          ),
           const SizedBox(height: 16),
-          _buildTextField('Last Name', _lastNameController, isRequired: true),
+          _buildTextField(
+            'Last Name',
+            _lastNameController,
+            isRequired: true,
+            focusNode: _lastNameFocus,
+            nextFocusNode: _emailFocus,
+          ),
           const SizedBox(height: 16),
           _buildTextField(
             'Email Address',
             _emailController,
             keyboardType: TextInputType.emailAddress,
             isRequired: true,
+            focusNode: _emailFocus,
+            nextFocusNode: _phoneFocus,
           ),
           const SizedBox(height: 16),
           _buildTextField(
@@ -1135,6 +1168,8 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
             _phoneController,
             keyboardType: TextInputType.phone,
             isRequired: true,
+            focusNode: _phoneFocus,
+            nextFocusNode: _aadhaarFocus,
           ),
           const SizedBox(height: 16),
           _buildTextField(
@@ -1142,6 +1177,8 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
             _aadhaarController,
             keyboardType: TextInputType.number,
             isRequired: true,
+            focusNode: _aadhaarFocus,
+            nextFocusNode: _panFocus,
           ),
           const SizedBox(height: 16),
           _buildTextField(
@@ -1150,10 +1187,12 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
             keyboardType: TextInputType.visiblePassword,
             isRequired: true,
             isUpperCase: true,
-          ),
+            focusNode: _panFocus,
+          ), // No nextFocusNode - last field
         ],
       );
     } else {
+      // Desktop layout - similar pattern but for rows
       return Column(
         children: [
           Row(
@@ -1163,6 +1202,8 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
                   'First Name',
                   _firstNameController,
                   isRequired: true,
+                  focusNode: _firstNameFocus,
+                  nextFocusNode: _lastNameFocus,
                 ),
               ),
               const SizedBox(width: 20),
@@ -1171,6 +1212,8 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
                   'Last Name',
                   _lastNameController,
                   isRequired: true,
+                  focusNode: _lastNameFocus,
+                  nextFocusNode: _emailFocus,
                 ),
               ),
             ],
@@ -1184,6 +1227,8 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
                   _emailController,
                   keyboardType: TextInputType.emailAddress,
                   isRequired: true,
+                  focusNode: _emailFocus,
+                  nextFocusNode: _phoneFocus,
                 ),
               ),
               const SizedBox(width: 20),
@@ -1193,6 +1238,8 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
                   _phoneController,
                   keyboardType: TextInputType.phone,
                   isRequired: true,
+                  focusNode: _phoneFocus,
+                  nextFocusNode: _aadhaarFocus,
                 ),
               ),
             ],
@@ -1206,6 +1253,8 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
                   _aadhaarController,
                   keyboardType: TextInputType.number,
                   isRequired: true,
+                  focusNode: _aadhaarFocus,
+                  nextFocusNode: _panFocus,
                 ),
               ),
               const SizedBox(width: 20),
@@ -1216,11 +1265,11 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
                   keyboardType: TextInputType.visiblePassword,
                   isRequired: true,
                   isUpperCase: true,
-                ),
+                  focusNode: _panFocus,
+                ), // No nextFocusNode - last field
               ),
             ],
           ),
-          const SizedBox(height: 16),
         ],
       );
     }
@@ -1236,6 +1285,8 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
             keyboardType: TextInputType.text,
             isRequired: true,
             isUpperCase: true,
+            focusNode: _holderNameFocus,
+            nextFocusNode: _bankAccountFocus,
           ),
           const SizedBox(height: 16),
           _buildTextField(
@@ -1243,6 +1294,8 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
             _bankAccountController,
             keyboardType: TextInputType.number,
             isRequired: true,
+            focusNode: _bankAccountFocus,
+            nextFocusNode: _ifscFocus,
           ),
           const SizedBox(height: 16),
           _buildTextField(
@@ -1250,6 +1303,8 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
             _ifscController,
             isRequired: true,
             isUpperCase: true,
+            focusNode: _ifscFocus,
+            nextFocusNode: _branchNameFocus,
           ),
           const SizedBox(height: 16),
           _buildTextField(
@@ -1258,6 +1313,8 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
             keyboardType: TextInputType.text,
             isRequired: true,
             isUpperCase: true,
+            focusNode: _branchNameFocus,
+            nextFocusNode: _branchCodeFocus,
           ),
           const SizedBox(height: 16),
           _buildTextField(
@@ -1266,7 +1323,8 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
             keyboardType: TextInputType.visiblePassword,
             isRequired: true,
             isUpperCase: true,
-          ),
+            focusNode: _branchCodeFocus,
+          ), // No nextFocusNode - last field
         ],
       );
     } else {
@@ -1281,6 +1339,8 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
                   keyboardType: TextInputType.text,
                   isRequired: true,
                   isUpperCase: true,
+                  focusNode: _holderNameFocus,
+                  nextFocusNode: _bankAccountFocus,
                 ),
               ),
               const SizedBox(width: 20),
@@ -1290,6 +1350,8 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
                   _bankAccountController,
                   keyboardType: TextInputType.number,
                   isRequired: true,
+                  focusNode: _bankAccountFocus,
+                  nextFocusNode: _ifscFocus,
                 ),
               ),
             ],
@@ -1300,6 +1362,8 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
             _ifscController,
             isRequired: true,
             isUpperCase: true,
+            focusNode: _ifscFocus,
+            nextFocusNode: _branchNameFocus,
           ),
           const SizedBox(height: 30),
           Row(
@@ -1311,6 +1375,8 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
                   keyboardType: TextInputType.text,
                   isRequired: true,
                   isUpperCase: true,
+                  focusNode: _branchNameFocus,
+                  nextFocusNode: _branchCodeFocus,
                 ),
               ),
               const SizedBox(width: 20),
@@ -1321,7 +1387,8 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
                   keyboardType: TextInputType.visiblePassword,
                   isRequired: true,
                   isUpperCase: true,
-                ),
+                  focusNode: _branchCodeFocus,
+                ), // No nextFocusNode - last field
               ),
             ],
           ),
@@ -1339,6 +1406,8 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
             _cityController,
             keyboardType: TextInputType.text,
             isRequired: true,
+            focusNode: _cityFocus,
+            nextFocusNode: _stateFocus,
           ),
           const SizedBox(height: 16),
           _buildTextField(
@@ -1346,6 +1415,8 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
             _stateController,
             keyboardType: TextInputType.text,
             isRequired: true,
+            focusNode: _stateFocus,
+            nextFocusNode: _addressFocus,
           ),
           const SizedBox(height: 16),
           _buildTextField(
@@ -1354,7 +1425,8 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
             keyboardType: TextInputType.multiline,
             isRequired: true,
             maxLines: 3,
-          ),
+            focusNode: _addressFocus,
+          ), // No nextFocusNode - last field (multiline)
         ],
       );
     } else {
@@ -1368,6 +1440,8 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
                   _cityController,
                   keyboardType: TextInputType.text,
                   isRequired: true,
+                  focusNode: _cityFocus,
+                  nextFocusNode: _stateFocus,
                 ),
               ),
               const SizedBox(width: 20),
@@ -1377,6 +1451,8 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
                   _stateController,
                   keyboardType: TextInputType.text,
                   isRequired: true,
+                  focusNode: _stateFocus,
+                  nextFocusNode: _addressFocus,
                 ),
               ),
             ],
@@ -1388,7 +1464,8 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
             keyboardType: TextInputType.multiline,
             isRequired: true,
             maxLines: 3,
-          ),
+            focusNode: _addressFocus,
+          ), // No nextFocusNode - last field (multiline)
         ],
       );
     }
@@ -1401,6 +1478,8 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
     bool isRequired = false,
     bool isUpperCase = false,
     int maxLines = 1,
+    FocusNode? focusNode,
+    FocusNode? nextFocusNode,
   }) {
     List<TextInputFormatter> inputFormatters = [];
 
@@ -1436,10 +1515,30 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
+          autofocus: true,
+          focusNode: focusNode,
           keyboardType: keyboardType,
           cursorColor: kPrimaryColor,
           maxLines: maxLines,
           inputFormatters: inputFormatters,
+          textInputAction:
+              maxLines > 1
+                  ? TextInputAction.newline
+                  : (nextFocusNode != null
+                      ? TextInputAction.next
+                      : TextInputAction.done),
+          onFieldSubmitted: (value) {
+            if (nextFocusNode != null) {
+              FocusScope.of(context).requestFocus(nextFocusNode);
+            } else {
+              // This is the last field in the step, trigger next step or submit
+              if (currentStep == 4) {
+                _submitForm(); // Submit on final step
+              } else {
+                _nextStep(); // Go to next step
+              }
+            }
+          },
           validator:
               isRequired
                   ? (value) {
@@ -1589,6 +1688,21 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
     _cityController.dispose();
     _stateController.dispose();
     _addressController.dispose();
+
+    _firstNameFocus.dispose();
+    _lastNameFocus.dispose();
+    _emailFocus.dispose();
+    _phoneFocus.dispose();
+    _aadhaarFocus.dispose();
+    _panFocus.dispose();
+    _holderNameFocus.dispose();
+    _bankAccountFocus.dispose();
+    _ifscFocus.dispose();
+    _branchNameFocus.dispose();
+    _branchCodeFocus.dispose();
+    _cityFocus.dispose();
+    _stateFocus.dispose();
+    _addressFocus.dispose();
 
     super.dispose();
   }
