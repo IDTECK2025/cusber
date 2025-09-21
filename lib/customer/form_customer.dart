@@ -2303,6 +2303,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
     );
   }
 
+  //
   Widget _buildNavigationButtons() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
