@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:gold_pos/api.dart';
 import 'package:gold_pos/utils/avathar.dart';
+import 'package:gold_pos/utils/diamond_indicator.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
 import '../../models/customer_model.dart';
@@ -159,8 +160,8 @@ class AllCustomerState extends State<AllCustomer> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(color: kPrimaryColor),
-            SizedBox(height: 16),
+            DiamondIndicator(size: 10),
+            SizedBox(height: 20),
             Text(
               'Loading customers...',
               style: TextStyle(color: Color(0xFF6B7280), fontSize: 16),

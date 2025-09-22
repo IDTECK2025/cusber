@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:gold_pos/api.dart';
 import 'package:gold_pos/auth_helper.dart';
 import 'package:gold_pos/models/customer_model.dart';
+import 'package:gold_pos/utils/diamond_indicator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:ui' show ImageFilter;
 import '../../utils/avathar.dart';
@@ -451,7 +452,7 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
                       ),
                       child:
                           _isLoading
-                              ? const Center(child: CircularProgressIndicator())
+                              ? Center(child: DiamondIndicator(size: 10))
                               : _filteredCustomers.isEmpty
                               ? const Center(
                                 child: Padding(
