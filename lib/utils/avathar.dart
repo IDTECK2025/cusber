@@ -6,11 +6,11 @@ class Avatar extends StatelessWidget {
   final Color color;
 
   const Avatar({
-    Key? key,
+    super.key,
     required this.name,
     this.size = 16,
-    this.color = Colors.white
-  }) : super(key: key);
+    this.color = Colors.white,
+  });
 
   Color _getAvatarColor(String name) {
     final colors = [
@@ -24,17 +24,39 @@ class Avatar extends StatelessWidget {
     return colors[name.hashCode % colors.length];
   }
 
+  String _getInitials(String name) {
+    if (name.trim().isEmpty) {
+      return '?';
+    }
+
+    // Split by space and filter out empty strings
+    final nameParts =
+        name.trim().split(' ').where((part) => part.isNotEmpty).toList();
+
+    if (nameParts.isEmpty) {
+      return '?';
+    }
+
+    // Take first letter of first two words
+    String initials = '';
+    for (int i = 0; i < nameParts.length && i < 2; i++) {
+      if (nameParts[i].isNotEmpty) {
+        initials += nameParts[i][0];
+      }
+    }
+
+    return initials.toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
     return CircleAvatar(
       radius: size,
       backgroundColor: _getAvatarColor(name),
       child: Text(
-        name.isNotEmpty
-            ? name.split(' ').map((n) => n[0]).take(2).join().toUpperCase()
-            : '?',
+        _getInitials(name),
         style: TextStyle(
-          color: color ,
+          color: color,
           fontWeight: FontWeight.w600,
           fontSize: size * 0.6,
         ),

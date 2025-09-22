@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:gold_pos/dashboard.dart';
 import 'package:gold_pos/lock/lock.dart';
-import 'package:gold_pos/shareholder/shareholder_page.dart';
 import 'package:gold_pos/splash/welcome.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:device_preview/device_preview.dart';
 
 void main() {
   // Ensure initialized
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(MyApp());
+  runApp(DevicePreview(enabled: true, builder: (context) => const MyApp()));
 }
 
 class MyApp extends StatelessWidget {

@@ -2036,6 +2036,16 @@ class _CustomerFormScreenState extends State<CustomerForm> {
       inputFormatters.add(
         FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
       );
+    } else if (label == 'First Name' ||
+        label == 'Last Name' ||
+        label == 'Nominee Name') {
+      // ✅ ADDED: Name fields - Only alphabets and spaces
+      inputFormatters.add(
+        FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z ]')),
+      );
+      inputFormatters.add(
+        LengthLimitingTextInputFormatter(50),
+      ); // Optional: limit name length
     }
 
     return Column(

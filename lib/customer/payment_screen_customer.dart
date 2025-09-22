@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:gold_pos/api.dart';
 import 'package:gold_pos/auth_helper.dart';
 import 'package:gold_pos/models/customer_model.dart';
 import 'package:http/http.dart' as http;
@@ -35,7 +36,7 @@ class MyApp extends StatelessWidget {
 }
 
 class PaymentService {
-  static const String baseUrl = 'http://localhost:2025';
+  static const String baseUrl = ApiConfig.baseUrl;
 
   // Get headers with auth token from SharedPreferences
   static Future<Map<String, String>> _getHeaders() async {
