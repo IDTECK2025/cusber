@@ -809,7 +809,6 @@ class _ShareholderManagementScreenState
               : 40,
       runSpacing: isDesktop ? 10 : 10,
       children: [
-        //_buildInfoItem("Name", txn.name),
         _buildInfoItem("Address", shareholder.address ?? 'N/A'),
         _buildInfoItem("City", shareholder.city ?? 'N/A'),
         _buildInfoItem("Aadhaar No", shareholder.adhar ?? 'N/A'),

@@ -222,7 +222,12 @@ class AllCustomerState extends State<AllCustomer> {
     if (isMobile) {
       return RefreshIndicator(
         onRefresh: refreshCustomers,
-        child: _buildMobileCustomerList(),
+        child: _buildMobileCustomerList(
+          isDesktop,
+          isTablet,
+          isTabletMini,
+          isMobile,
+        ),
       );
     }
 
@@ -317,7 +322,12 @@ class AllCustomerState extends State<AllCustomer> {
     );
   }
 
-  Widget _buildMobileCustomerList() {
+  Widget _buildMobileCustomerList(
+    bool isDesktop,
+    bool isTablet,
+    bool isMobile,
+    bool isTabletMini,
+  ) {
     if (paginatedCustomers.isEmpty) {
       return _buildEmptyState();
     }
@@ -332,7 +342,13 @@ class AllCustomerState extends State<AllCustomer> {
         return Column(
           children: [
             _buildMobileCustomerCard(customer, customerId),
-            if (isExpanded) _buildMobileExpandedDetails(customer),
+            if (isExpanded)
+              _buildExpandedCustomerDetails(
+                customer,
+                isDesktop,
+                isTablet,
+                isTabletMini,
+              ),
           ],
         );
       },
@@ -758,19 +774,23 @@ class AllCustomerState extends State<AllCustomer> {
         _buildInfoItem('ADDRESS', customer.address),
         _buildInfoItem('STATE', customer.state),
         _buildInfoItem('CITY', customer.city),
-        _buildInfoItem('AADHAAR NO', customer.aadhaarNo),
-        _buildInfoItem('PAN NUMBER', customer.panNumber),
-        _buildInfoItem('ACCOUNT NUMBER ', customer.acc),
-        _buildInfoItem('HOLDER NAME', customer.bank),
-        _buildInfoItem('BANK BRANCH', customer.branch),
-        _buildInfoItem('IFSC CODE', customer.ifsc),
+        _buildInfoItem('PIN', customer.pin, color: kPrimaryColor),
+        // _buildInfoItem('AADHAAR NO', customer.aadhaarNo),
+        // _buildInfoItem('PAN NUMBER', customer.panNumber),
+        // _buildInfoItem('ACCOUNT NUMBER ', customer.acc),
+        // _buildInfoItem('HOLDER NAME', customer.bank),
+        // _buildInfoItem('BANK BRANCH', customer.branch),
+        // _buildInfoItem('IFSC CODE', customer.ifsc),
+        _buildInfoItem('Nominee Name', customer.nomineeName),
+        _buildInfoItem('Nominee Phone ', customer.nomineePhone),
+
         _buildInfoItem('JOIN DATE', _formatDate(customer.joinDate)),
         _buildInfoItem('Scheme Date', _formatDate(customer.schemeDate)),
       ],
     );
   }
 
-  Widget _buildInfoItem(String label, String value) {
+  Widget _buildInfoItem(String label, String value, {Color? color}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Column(
@@ -780,7 +800,7 @@ class AllCustomerState extends State<AllCustomer> {
             label,
             style: TextStyle(
               fontSize: 12,
-              color: Color(0xFF6B7280),
+              color: color ?? Color(0xFF6B7280),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -789,7 +809,7 @@ class AllCustomerState extends State<AllCustomer> {
             value,
             style: TextStyle(
               fontSize: 14,
-              color: Color(0xFF1F2937),
+              color: color ?? Color(0xFF1F2937),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -803,13 +823,17 @@ class AllCustomerState extends State<AllCustomer> {
       ['ADDRESS', customer.address],
       ['STATE', customer.state],
       ['CITY', customer.city],
-      ['AADHAAR NO', customer.aadhaarNo],
-      ['PAN NUMBER', customer.panNumber],
-      ['BANK', customer.bank],
-      ['IFSC CODE', customer.ifsc],
-      ['ACCOUNT NO', customer.acc],
-      ['BRANCH', customer.branch],
+      ['PIN', customer.pin],
+      // ['AADHAAR NO', customer.aadhaarNo],
+      // ['PAN NUMBER', customer.panNumber],
+      // ['BANK', customer.bank],
+      // ['IFSC CODE', customer.ifsc],
+      // ['ACCOUNT NO', customer.acc],
+      // ['BRANCH', customer.branch],
+      ['Nominee Name', customer.nomineeName],
+      ['Nominee Phone', customer.nomineePhone],
       ['JOIN DATE', _formatDate(customer.joinDate)],
+      ['Scheme Date', _formatDate(customer.schemeDate)],
     ];
 
     return Column(
@@ -819,7 +843,11 @@ class AllCustomerState extends State<AllCustomer> {
               .map(
                 (item) => Padding(
                   padding: EdgeInsets.only(bottom: 12),
-                  child: _buildInfoItem(item[0], item[1]),
+                  child: _buildInfoItem(
+                    item[0],
+                    item[1],
+                    color: item[0] == 'PIN' ? kPrimaryColor : null,
+                  ),
                 ),
               )
               .toList(),

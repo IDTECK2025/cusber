@@ -116,7 +116,7 @@ class ApiService {
     required String lastName,
     required String email,
     required String phone,
-    required String nomineeName,
+    required String nominee,
     required String nomineePhone,
     // required String aadhaar,
     // required String pan,
@@ -147,7 +147,7 @@ class ApiService {
         'name': '$firstName $lastName',
         'email': email,
         'phone': phone,
-        'nominee': nomineeName,
+        'nominee': nominee,
         'nomineePhone': nomineePhone,
         // 'adharcard': aadhaar,
         // 'pancard': pan,
@@ -158,7 +158,7 @@ class ApiService {
         // 'branch': branchName,
         'city': city,
         'state': state,
-        'addrass': address,
+        'address': address,
         'amount': amount,
         'date': date,
         'emaidate': date,
@@ -285,7 +285,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
   void _nextStep() {
     if (_formKey.currentState!.validate()) {
       setState(() {
-        if (currentStep < 4) {
+        if (currentStep < 3) {
           currentStep++;
         }
       });
@@ -350,7 +350,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
         lastName: _lastNameController.text,
         email: _emailController.text,
         phone: _phoneController.text,
-        nomineeName: _nomineeController.text,
+        nominee: _nomineeController.text,
         nomineePhone: _nomineePhoneController.text,
         city: _cityController.text,
         state: _stateController.text ?? 'Kerala',

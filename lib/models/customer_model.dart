@@ -31,6 +31,8 @@ class Customer {
   final String name;
   final String email;
   final String phone;
+  final String nomineeName;
+  final String nomineePhone;
   final int coins;
   final String aadhaarNo;
   final String panNumber;
@@ -58,6 +60,8 @@ class Customer {
     required this.name,
     required this.email,
     required this.phone,
+    required this.nomineeName,
+    required this.nomineePhone,
     required this.coins,
     required this.aadhaarNo,
     required this.panNumber,
@@ -99,6 +103,8 @@ class Customer {
       name: json['name'] ?? '',
       email: json['email']?.toLowerCase() ?? '',
       phone: json['phone'] ?? '',
+      nomineeName: json['nominee'] ?? '',
+      nomineePhone: json['nomineePhone'] ?? '',
       coins: json['coins'] ?? 0,
       aadhaarNo: json['adharcard'] ?? '',
       panNumber: json['pancard'] ?? '',

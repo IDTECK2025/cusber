@@ -158,20 +158,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Bottom nav items (for mobile/tablet)
   final List<BottomNavigationBarItem> _bottomItems = [
     BottomNavigationBarItem(
-      icon: Icon(Icons.dashboard),
+      icon: Icon(Icons.dashboard_rounded),
       activeIcon: Icon(UIcons.solidRounded.dashboard),
       label: "Dashboard",
     ),
+    BottomNavigationBarItem(icon: Icon(Icons.person_pin), label: "Customer"),
     BottomNavigationBarItem(
-      icon: Icon(UIcons.solidRounded.target),
-      label: "Customer",
-    ),
-    BottomNavigationBarItem(
-      icon: Icon(UIcons.solidRounded.crown),
+      icon: Icon(Icons.handshake_rounded),
       label: "Share holder",
     ),
-    BottomNavigationBarItem(icon: Icon(Icons.person), label: "Agent"),
-    BottomNavigationBarItem(icon: Icon(Icons.person), label: "Sub agent"),
+    BottomNavigationBarItem(
+      icon: Icon(Icons.person_add_alt_1_rounded),
+      label: "Agent",
+    ),
+    BottomNavigationBarItem(
+      icon: Icon(Icons.person_add_alt_1_rounded),
+      label: "Sub agent",
+    ),
   ];
 
   // Screens for each menu item
@@ -256,24 +259,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
               isDesktop
                   ? null
                   : BottomNavigationBar(
+                    backgroundColor: kBlueColor,
                     currentIndex: _selectedIndex,
                     onTap: (index) {
                       setState(() => _selectedIndex = index);
                     },
                     items: _bottomItems,
                     unselectedLabelStyle: TextStyle(
-                      color: Colors.black,
+                      color: Colors.white,
                       fontSize: 10,
                       fontWeight: FontWeight.w400,
                     ),
                     selectedLabelStyle: TextStyle(
-                      color: Colors.black,
-                      fontSize: 11,
+                      color: Colors.white,
+                      fontSize: 10.5,
                       fontWeight: FontWeight.w500,
                     ),
                     iconSize: 20,
                     selectedItemColor: kPrimaryColor,
-                    unselectedItemColor: Colors.black54,
+                    unselectedItemColor: Colors.white54,
                     unselectedIconTheme: const IconThemeData(size: 19),
                     type: BottomNavigationBarType.fixed,
                   ),

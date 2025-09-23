@@ -36,10 +36,10 @@ class MyApp extends StatelessWidget {
   }
 }
 
+// [PaymentService class remains the same]
 class PaymentService {
   static const String baseUrl = ApiConfig.baseUrl;
 
-  // Get headers with auth token from SharedPreferences
   static Future<Map<String, String>> _getHeaders() async {
     final token = await AuthHelper.getToken();
     return {
@@ -48,7 +48,6 @@ class PaymentService {
     };
   }
 
-  // Existing makePayment method
   static Future<Map<String, dynamic>> makePayment({
     required String customerId,
     required double amount,
@@ -81,7 +80,6 @@ class PaymentService {
     }
   }
 
-  // Get all customers
   static Future<Map<String, dynamic>> getCustomers() async {
     try {
       final headers = await _getHeaders();
@@ -101,7 +99,6 @@ class PaymentService {
     }
   }
 
-  // Get single customer details with updated wallet info
   static Future<Map<String, dynamic>> getCustomerById(String customerId) async {
     try {
       final headers = await _getHeaders();
@@ -170,8 +167,7 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
         final List<dynamic> customerData =
             result['data'] is List
                 ? result['data']
-                : result['data']['customers'] ??
-                    []; // Handle different response structures
+                : result['data']['customers'] ?? [];
 
         _allCustomers =
             customerData.map((json) => Customer.fromJson(json)).toList();
@@ -182,7 +178,6 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
             backgroundColor: Colors.red,
           ),
         );
-        // Keep empty list if API fails
         _allCustomers = [];
       }
     } catch (e) {
@@ -234,12 +229,10 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
         final updatedCustomer = Customer.fromJson(result['data']);
 
         setState(() {
-          // Update the customer in the list
           final index = _allCustomers.indexWhere((c) => c.id == customerId);
           if (index != -1) {
             _allCustomers[index] = updatedCustomer;
             _selectedCustomer = updatedCustomer;
-            // Update amount field with new scheme amount if needed
             _amountCtrl.text = updatedCustomer.schemeAmount.toStringAsFixed(0);
           }
         });
@@ -266,7 +259,6 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
       return;
     }
 
-    // ✅ NEW: Check if payment is within 20 days before emaidate
     if (_selectedCustomer!.emaidate != null) {
       final now = DateTime.now();
       final nextPayableDate = _selectedCustomer!.emaidate!;
@@ -291,7 +283,6 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
       }
     }
 
-    // Show loading dialog
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -299,7 +290,6 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
     );
 
     try {
-      // Use customer's emaidate for month calculation
       final emiDate = _selectedCustomer!.emaidate ?? _selectedDate!;
       final month =
           '${emiDate.year}-${emiDate.month.toString().padLeft(2, '0')}';
@@ -310,7 +300,7 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
         month: month,
       );
 
-      Navigator.of(context).pop(); // Close loading dialog
+      Navigator.of(context).pop();
 
       if (result['success']) {
         final details = PaymentDetails(
@@ -333,7 +323,580 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
         );
       }
     } catch (e) {
-      Navigator.of(context).pop(); // Close loading dialog
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Handle customer tap - navigate to payment screen on mobile
+  void _onCustomerTap(Customer customer) {
+    final constraints = MediaQuery.of(context).size;
+    final isMobile = constraints.width < 600;
+
+    if (isMobile) {
+      // Navigate to separate payment screen on mobile
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder:
+              (context) => MobilePaymentScreen(
+                customer: customer,
+                onRefreshCustomer: () => _refreshCustomerData(customer.id),
+              ),
+        ),
+      );
+    } else {
+      // Existing behavior for tablet/desktop
+      setState(() {
+        _selectedCustomer = customer;
+        _amountCtrl.text = customer.schemeAmount.toStringAsFixed(0);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: kBackgroundColor,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Responsive breakpoints
+            final isDesktop = constraints.maxWidth > 1024;
+            final isTablet =
+                constraints.maxWidth >= 600 && constraints.maxWidth <= 1024;
+            final isMobile = constraints.maxWidth < 600;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Responsive Search Header
+                _buildSearchHeader(isDesktop, isTablet, isMobile),
+
+                SizedBox(
+                  height:
+                      isDesktop
+                          ? 24
+                          : isTablet
+                          ? 20
+                          : 16,
+                ),
+
+                // Responsive Main Content
+                Expanded(
+                  child: _buildMainContent(
+                    constraints,
+                    isDesktop,
+                    isTablet,
+                    isMobile,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchHeader(bool isDesktop, bool isTablet, bool isMobile) {
+    return SizedBox(
+      height:
+          isDesktop
+              ? 48
+              : isTablet
+              ? 44
+              : 40,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal:
+                    isDesktop
+                        ? 16
+                        : isTablet
+                        ? 14
+                        : 12,
+                vertical:
+                    isDesktop
+                        ? 12
+                        : isTablet
+                        ? 10
+                        : 8,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(
+                  isDesktop
+                      ? 16
+                      : isTablet
+                      ? 14
+                      : 12,
+                ),
+                border: Border.all(color: const Color(0xFFE5E7EB)),
+                boxShadow:
+                    isDesktop
+                        ? [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                        : [],
+              ),
+              child: TextField(
+                cursorColor: kPrimaryColor,
+                style: TextStyle(
+                  fontSize:
+                      isDesktop
+                          ? 16
+                          : isTablet
+                          ? 14
+                          : 12,
+                ),
+                decoration: InputDecoration(
+                  isDense: true,
+                  hintText: 'Search customer name or phone',
+                  hintStyle: TextStyle(
+                    color: const Color(0xFF9CA3AF),
+                    fontSize:
+                        isDesktop
+                            ? 16
+                            : isTablet
+                            ? 14
+                            : 12,
+                  ),
+                  border: InputBorder.none,
+                  icon: Icon(
+                    Icons.search,
+                    size:
+                        isDesktop
+                            ? 20
+                            : isTablet
+                            ? 18
+                            : 16,
+                    color: const Color(0xFF6B7280),
+                  ),
+                ),
+                onChanged: (v) => setState(() => _query = v),
+              ),
+            ),
+          ),
+
+          SizedBox(
+            width:
+                isDesktop
+                    ? 16
+                    : isTablet
+                    ? 14
+                    : 12,
+          ),
+
+          GestureDetector(
+            onTap: _loadCustomers,
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal:
+                    isDesktop
+                        ? 16
+                        : isTablet
+                        ? 14
+                        : 12,
+                vertical:
+                    isDesktop
+                        ? 12
+                        : isTablet
+                        ? 10
+                        : 8,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(
+                  isDesktop
+                      ? 16
+                      : isTablet
+                      ? 14
+                      : 12,
+                ),
+                border: Border.all(color: const Color(0xFFE5E7EB)),
+                boxShadow:
+                    isDesktop
+                        ? [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                        : [],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.refresh,
+                    size:
+                        isDesktop
+                            ? 20
+                            : isTablet
+                            ? 18
+                            : 16,
+                    color: _isLoading ? kPrimaryColor : const Color(0xFF6B7280),
+                  ),
+                  if (!isMobile) ...[
+                    SizedBox(width: isDesktop ? 8 : 6),
+                    Text(
+                      'Refresh',
+                      style: TextStyle(
+                        color:
+                            _isLoading
+                                ? kPrimaryColor
+                                : const Color(0xFF374151),
+                        fontWeight: FontWeight.w500,
+                        fontSize: isDesktop ? 16 : 14,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMainContent(
+    BoxConstraints constraints,
+    bool isDesktop,
+    bool isTablet,
+    bool isMobile,
+  ) {
+    if (isMobile) {
+      // Mobile: Only Customer List (Payment screen is separate)
+      return _buildMobileCustomerList();
+    } else {
+      // Tablet & Desktop: Horizontal Layout
+      return _buildTabletDesktopLayout(isDesktop, isTablet);
+    }
+  }
+
+  Widget _buildMobileCustomerList() {
+    return Card(
+      margin: EdgeInsets.zero,
+      color: Colors.white,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        side: const BorderSide(color: Colors.black12),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child:
+          _isLoading
+              ? Center(child: DiamondIndicator(size: 8))
+              : _filteredCustomers.isEmpty
+              ? const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text('No customers found'),
+                ),
+              )
+              : ListView.separated(
+                itemCount: _filteredCustomers.length,
+                separatorBuilder:
+                    (_, __) => const Divider(height: 1, color: Colors.black12),
+                itemBuilder: (context, index) {
+                  final c = _filteredCustomers[index];
+                  return ListTile(
+                    dense: true,
+                    leading: Avatar(name: c.name, size: 20),
+                    title: Text(
+                      c.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: Colors.black,
+                      ),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          c.phone,
+                          style: const TextStyle(
+                            color: Colors.black54,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '₹${c.schemeAmount.toStringAsFixed(0)}/month',
+                          style: TextStyle(
+                            color: kPrimaryColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    trailing: const Icon(Icons.chevron_right, size: 20),
+                    onTap: () => _onCustomerTap(c),
+                  );
+                },
+              ),
+    );
+  }
+
+  Widget _buildTabletDesktopLayout(bool isDesktop, bool isTablet) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Left: Customer List
+        Expanded(
+          flex: isDesktop ? 6 : 7,
+          child: Card(
+            margin: EdgeInsets.zero,
+            color: Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              side: const BorderSide(color: Colors.black12),
+              borderRadius: BorderRadius.circular(isDesktop ? 16 : 12),
+            ),
+            child:
+                _isLoading
+                    ? Center(child: DiamondIndicator(size: isDesktop ? 12 : 10))
+                    : _filteredCustomers.isEmpty
+                    ? Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(isDesktop ? 32.0 : 24.0),
+                        child: Text(
+                          'No customers found',
+                          style: TextStyle(fontSize: isDesktop ? 16 : 14),
+                        ),
+                      ),
+                    )
+                    : ListView.separated(
+                      itemCount: _filteredCustomers.length,
+                      separatorBuilder:
+                          (_, __) =>
+                              const Divider(height: 1, color: Colors.black12),
+                      itemBuilder: (context, index) {
+                        final c = _filteredCustomers[index];
+                        final isSelected = _selectedCustomer?.id == c.id;
+                        return ListTile(
+                          leading: Avatar(
+                            name: c.name,
+                            size: isDesktop ? 24 : 20,
+                          ),
+                          title: Text(
+                            c.name,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: isDesktop ? 16 : 14,
+                              color: isSelected ? kPrimaryColor : Colors.black,
+                            ),
+                          ),
+                          subtitle: Text(
+                            c.phone,
+                            style: TextStyle(
+                              color: Colors.black54,
+                              fontSize: isDesktop ? 14 : 12,
+                            ),
+                          ),
+                          trailing:
+                              isSelected
+                                  ? Icon(
+                                    Icons.check_circle,
+                                    color: kPrimaryColor,
+                                    size: isDesktop ? 24 : 20,
+                                  )
+                                  : Icon(
+                                    Icons.chevron_right,
+                                    size: isDesktop ? 24 : 20,
+                                  ),
+                          selected: isSelected,
+                          onTap: () => _onCustomerTap(c),
+                        );
+                      },
+                    ),
+          ),
+        ),
+
+        SizedBox(width: isDesktop ? 24 : 16),
+
+        // Right: Payment Form or Hint
+        Expanded(
+          flex: isDesktop ? 8 : 10,
+          child:
+              _selectedCustomer == null
+                  ? _HintPanel(isDesktop: isDesktop, isTablet: isTablet)
+                  : _PaymentForm(
+                    formKey: _formKey,
+                    selectedCustomer: _selectedCustomer!,
+                    amountCtrl: _amountCtrl,
+                    dateCtrl: _dateCtrl,
+                    paymentType: _paymentType,
+                    onPaymentTypeChanged:
+                        (pt) => setState(() => _paymentType = pt),
+                    onPickDate: _pickDate,
+                    onSubmit: _onSubmit,
+                    selectedDate: _selectedDate,
+                    isDesktop: isDesktop,
+                    isTablet: isTablet,
+                  ),
+        ),
+      ],
+    );
+  }
+}
+
+// New Mobile Payment Screen
+class MobilePaymentScreen extends StatefulWidget {
+  final Customer customer;
+  final VoidCallback onRefreshCustomer;
+
+  const MobilePaymentScreen({
+    super.key,
+    required this.customer,
+    required this.onRefreshCustomer,
+  });
+
+  @override
+  State<MobilePaymentScreen> createState() => _MobilePaymentScreenState();
+}
+
+class _MobilePaymentScreenState extends State<MobilePaymentScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _amountCtrl = TextEditingController();
+  final TextEditingController _dateCtrl = TextEditingController();
+  PaymentType? _paymentType;
+  DateTime? _selectedDate;
+  Customer? _currentCustomer;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentCustomer = widget.customer;
+    _paymentType = PaymentType.offline;
+    _selectedDate = DateTime.now();
+    _dateCtrl.text = _formatDate(DateTime.now());
+    _amountCtrl.text = widget.customer.schemeAmount.toStringAsFixed(0);
+  }
+
+  @override
+  void dispose() {
+    _amountCtrl.dispose();
+    _dateCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? now,
+      firstDate: DateTime(now.year - 2),
+      lastDate: DateTime(now.year + 2),
+      helpText: 'Select Payment Date',
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+        _dateCtrl.text = _formatDate(picked);
+      });
+    }
+  }
+
+  String _formatDate(DateTime d) {
+    return '${d.day.toString().padLeft(2, '0')}-${d.month.toString().padLeft(2, '0')}-${d.year}';
+  }
+
+  void _onSubmit() async {
+    if (_currentCustomer == null) return;
+
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    if (_paymentType == null || _selectedDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please complete all fields.')),
+      );
+      return;
+    }
+
+    if (_currentCustomer!.emaidate != null) {
+      final now = DateTime.now();
+      final nextPayableDate = _currentCustomer!.emaidate!;
+      final twentyDaysBefore = DateTime(
+        nextPayableDate.year,
+        nextPayableDate.month,
+        nextPayableDate.day - 20,
+      );
+
+      if (now.isBefore(twentyDaysBefore)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Payment can only be made 20 days before next payable date (${_formatDate(nextPayableDate)}). '
+              'You can make payment from ${_formatDate(twentyDaysBefore)} onwards.',
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+        return;
+      }
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final emiDate = _currentCustomer!.emaidate ?? _selectedDate!;
+      final month =
+          '${emiDate.year}-${emiDate.month.toString().padLeft(2, '0')}';
+
+      final result = await PaymentService.makePayment(
+        customerId: _currentCustomer!.id,
+        amount: double.parse(_amountCtrl.text),
+        month: month,
+      );
+
+      Navigator.of(context).pop();
+
+      if (result['success']) {
+        final details = PaymentDetails(
+          customer: _currentCustomer!,
+          amount: double.parse(_amountCtrl.text),
+          paymentType: _paymentType!,
+          paymentDate: _selectedDate!,
+          apiResponse: result['data'],
+        );
+
+        // Navigate to success screen and refresh parent
+        widget.onRefreshCustomer();
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => SuccessScreen(details: details)),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Payment failed: ${result['error']}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: ${e.toString()}'),
@@ -345,196 +908,55 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_currentCustomer == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Payment Details'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ),
+        body: const Center(child: Text('Customer not found')),
+      );
+    }
+
     return Scaffold(
       backgroundColor: kBackgroundColor,
+      appBar: AppBar(
+        backgroundColor: kBackgroundColor,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          'Payment Details',
+          style: const TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+          ),
+        ),
+        centerTitle: true,
+      ),
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Search Field
-            SizedBox(
-              height: 40,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE5E7EB)),
-                      ),
-                      child: TextField(
-                        cursorColor: kPrimaryColor,
-                        decoration: const InputDecoration(
-                          isDense: true,
-                          hintText: 'Search customer name or phone',
-                          hintStyle: TextStyle(
-                            color: Color(0xFF9CA3AF),
-                            fontSize: 12,
-                          ),
-                          border: InputBorder.none,
-                          icon: Icon(
-                            Icons.search,
-                            size: 16,
-                            color: Color(0xFF6B7280),
-                          ),
-                        ),
-                        onChanged: (v) => setState(() => _query = v),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  GestureDetector(
-                    onTap: _loadCustomers,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE5E7EB)),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.refresh,
-                            size: 16,
-                            color:
-                                _isLoading
-                                    ? kPrimaryColor
-                                    : const Color(0xFF6B7280),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'refresh',
-                            style: TextStyle(
-                              color:
-                                  _isLoading
-                                      ? kPrimaryColor
-                                      : Color(0xFF374151),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Results List
-            Expanded(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Left: customer list
-                  Expanded(
-                    flex: 7,
-                    child: Card(
-                      margin: EdgeInsets.zero,
-                      color: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        side: const BorderSide(color: Colors.black12),
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child:
-                          _isLoading
-                              ? Center(child: DiamondIndicator(size: 10))
-                              : _filteredCustomers.isEmpty
-                              ? const Center(
-                                child: Padding(
-                                  padding: EdgeInsets.all(24.0),
-                                  child: Text('No customers found'),
-                                ),
-                              )
-                              : ListView.separated(
-                                itemCount: _filteredCustomers.length,
-                                separatorBuilder:
-                                    (_, __) => const Divider(
-                                      height: 1,
-                                      color: Colors.black12,
-                                    ),
-                                itemBuilder: (context, index) {
-                                  final c = _filteredCustomers[index];
-                                  final isSelected =
-                                      _selectedCustomer?.id == c.id;
-                                  return ListTile(
-                                    leading: Avatar(name: c.name),
-                                    title: Text(
-                                      c.name,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        color:
-                                            isSelected
-                                                ? kPrimaryColor
-                                                : Colors.black,
-                                      ),
-                                    ),
-                                    subtitle: Text(
-                                      c.phone,
-                                      style: const TextStyle(
-                                        color: Colors.black,
-                                      ),
-                                    ),
-                                    trailing:
-                                        isSelected
-                                            ? const Icon(
-                                              Icons.check_circle,
-                                              color: kPrimaryColor,
-                                            )
-                                            : const Icon(Icons.chevron_right),
-                                    selected: isSelected,
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedCustomer = c;
-                                        _amountCtrl.text = c.schemeAmount
-                                            .toStringAsFixed(0);
-                                      });
-                                    },
-                                  );
-                                },
-                              ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 16),
-
-                  // Right: details + form
-                  Expanded(
-                    flex: 10,
-                    child:
-                        _selectedCustomer == null
-                            ? _HintPanel()
-                            : _PaymentForm(
-                              formKey: _formKey,
-                              selectedCustomer: _selectedCustomer!,
-                              amountCtrl: _amountCtrl,
-                              dateCtrl: _dateCtrl,
-                              paymentType: _paymentType,
-                              onPaymentTypeChanged:
-                                  (pt) => setState(() => _paymentType = pt),
-                              onPickDate: _pickDate,
-                              onSubmit: _onSubmit,
-                              selectedDate: _selectedDate,
-                            ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: _PaymentForm(
+            formKey: _formKey,
+            selectedCustomer: _currentCustomer!,
+            amountCtrl: _amountCtrl,
+            dateCtrl: _dateCtrl,
+            paymentType: _paymentType,
+            onPaymentTypeChanged: (pt) => setState(() => _paymentType = pt),
+            onPickDate: _pickDate,
+            onSubmit: _onSubmit,
+            selectedDate: _selectedDate,
+            isMobile: true,
+            isFullScreen: true, // New parameter for full screen mobile view
+          ),
         ),
       ),
     );
@@ -542,28 +964,69 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
 }
 
 class _HintPanel extends StatelessWidget {
+  final bool isDesktop;
+  final bool isTablet;
+
+  const _HintPanel({this.isDesktop = false, this.isTablet = false});
+
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Card(
       margin: EdgeInsets.zero,
       color: Colors.white,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        side: BorderSide(color: Colors.black12),
-        borderRadius: BorderRadius.circular(15),
+        side: const BorderSide(color: Colors.black12),
+        borderRadius: BorderRadius.circular(
+          isDesktop
+              ? 16
+              : isTablet
+              ? 14
+              : 12,
+        ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: EdgeInsets.all(
+          isDesktop
+              ? 32.0
+              : isTablet
+              ? 24.0
+              : 16.0,
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
-          children: const [
-            Icon(Icons.person_search, size: 48),
-            SizedBox(height: 12),
+          children: [
+            Icon(
+              Icons.person_search,
+              size:
+                  isDesktop
+                      ? 64
+                      : isTablet
+                      ? 56
+                      : 48,
+              color: Colors.grey[400],
+            ),
+            SizedBox(
+              height:
+                  isDesktop
+                      ? 16
+                      : isTablet
+                      ? 14
+                      : 12,
+            ),
             Text(
               'Select a customer from the left to continue',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                fontSize:
+                    isDesktop
+                        ? 18
+                        : isTablet
+                        ? 16
+                        : 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[600],
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -583,6 +1046,10 @@ class _PaymentForm extends StatefulWidget {
   final VoidCallback onPickDate;
   final VoidCallback onSubmit;
   final DateTime? selectedDate;
+  final bool isDesktop;
+  final bool isTablet;
+  final bool isMobile;
+  final bool isFullScreen; // New parameter for mobile full screen
 
   const _PaymentForm({
     required this.formKey,
@@ -594,6 +1061,10 @@ class _PaymentForm extends StatefulWidget {
     required this.onPickDate,
     required this.onSubmit,
     required this.selectedDate,
+    this.isDesktop = false,
+    this.isTablet = false,
+    this.isMobile = false,
+    this.isFullScreen = false, // New parameter for mobile full screen
     super.key,
   });
 
@@ -605,7 +1076,6 @@ class _PaymentFormState extends State<_PaymentForm> {
   @override
   void initState() {
     super.initState();
-    // Set today's date as default if no date is selected
     if (widget.selectedDate == null && widget.dateCtrl.text.isEmpty) {
       final today = DateTime.now();
       widget.dateCtrl.text = _formatDate(today);
@@ -623,11 +1093,33 @@ class _PaymentFormState extends State<_PaymentForm> {
         margin: EdgeInsets.zero,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(
+            widget.isDesktop
+                ? 16
+                : widget.isTablet
+                ? 14
+                : 12,
+          ),
           border: Border.all(color: Colors.black12, width: 1),
+          boxShadow:
+              widget.isDesktop
+                  ? [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
+                  ]
+                  : [],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(
+            widget.isDesktop
+                ? 16
+                : widget.isTablet
+                ? 14
+                : 12,
+          ),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: Column(
@@ -635,26 +1127,72 @@ class _PaymentFormState extends State<_PaymentForm> {
                 // Scrollable form content
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
+                    padding: EdgeInsets.all(
+                      widget.isDesktop
+                          ? 0
+                          : widget.isTablet
+                          ? 24
+                          : 16,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildPaymentRestrictionNotice(cs),
-                        SizedBox(height: 24),
+                        if (_isPaymentAllowed == false)
+                          SizedBox(
+                            height:
+                                widget.isDesktop
+                                    ? 32
+                                    : widget.isTablet
+                                    ? 24
+                                    : 16,
+                          ),
                         _buildCustomerHeader(cs, isDark),
-                        const SizedBox(height: 24),
+                        SizedBox(
+                          height:
+                              widget.isDesktop
+                                  ? 32
+                                  : widget.isTablet
+                                  ? 24
+                                  : 16,
+                        ),
                         _buildSchemeInfo(cs),
-                        const SizedBox(height: 24),
+                        SizedBox(
+                          height:
+                              widget.isDesktop
+                                  ? 32
+                                  : widget.isTablet
+                                  ? 24
+                                  : 16,
+                        ),
                         _buildFormFields(cs, isDark),
-                        const SizedBox(height: 24),
+
+                        // Add extra space for mobile full screen
+                        if (widget.isFullScreen)
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.1,
+                          ),
                       ],
                     ),
                   ),
                 ),
 
                 // Fixed bottom button
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 5, 20, 10),
+                Container(
+                  padding: EdgeInsets.fromLTRB(20, 5, 20, 10),
+                  decoration:
+                      widget.isFullScreen
+                          ? BoxDecoration(
+                            color: Colors.white,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, -2),
+                              ),
+                            ],
+                          )
+                          : null,
                   child: _buildSubmitButton(cs, isDark),
                 ),
               ],
@@ -667,7 +1205,13 @@ class _PaymentFormState extends State<_PaymentForm> {
 
   Widget _buildCustomerHeader(ColorScheme cs, bool isDark) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(
+        widget.isDesktop
+            ? 24
+            : widget.isTablet
+            ? 20
+            : 16,
+      ),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -677,89 +1221,202 @@ class _PaymentFormState extends State<_PaymentForm> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(
+          widget.isDesktop
+              ? 16
+              : widget.isTablet
+              ? 14
+              : 12,
+        ),
         border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
       ),
-      child: Row(
-        children: [
-          Avatar(
-            name: widget.selectedCustomer.name,
-            size: 30,
-            color: Colors.black,
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.selectedCustomer.name,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 20,
-                    color: cs.onSurface,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.phone_rounded,
-                      size: 16,
-                      color: cs.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      widget.selectedCustomer.phone,
-                      style: TextStyle(
-                        color: cs.onSurfaceVariant,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+      child:
+          widget.isMobile || widget.isFullScreen
+              ? Column(
+                children: [
+                  Row(
+                    children: [
+                      Avatar(
+                        name: widget.selectedCustomer.name,
+                        size: 24,
+                        color: Colors.black,
                       ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [kBlueColor, kBlueColor.withOpacity(0.6)],
-              ),
-              borderRadius: BorderRadius.circular(50),
-              boxShadow: [
-                BoxShadow(
-                  color: cs.tertiary.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.account_balance_wallet_rounded,
-                  size: 16,
-                  color: cs.onTertiary,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  '₹${widget.selectedCustomer.schemeAmount.toStringAsFixed(0)}/mo',
-                  style: TextStyle(
-                    color: cs.onTertiary,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.selectedCustomer.name,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 16,
+                                color: cs.onSurface,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              widget.selectedCustomer.phone,
+                              style: TextStyle(
+                                color: cs.onSurfaceVariant,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [kBlueColor, kBlueColor.withOpacity(0.6)],
+                      ),
+                      borderRadius: BorderRadius.circular(50),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.account_balance_wallet_rounded,
+                          size: 16,
+                          color: cs.onTertiary,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '₹${widget.selectedCustomer.schemeAmount.toStringAsFixed(0)}/mo',
+                          style: TextStyle(
+                            color: cs.onTertiary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              )
+              : Row(
+                children: [
+                  Avatar(
+                    name: widget.selectedCustomer.name,
+                    size: widget.isDesktop ? 32 : 28,
+                    color: Colors.black,
+                  ),
+                  SizedBox(width: widget.isDesktop ? 20 : 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.selectedCustomer.name,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize:
+                                widget.isDesktop
+                                    ? 22
+                                    : widget.isTablet
+                                    ? 20
+                                    : 18,
+                            color: cs.onSurface,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        SizedBox(height: widget.isDesktop ? 8 : 6),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.phone_rounded,
+                              size: widget.isDesktop ? 18 : 16,
+                              color: cs.onSurfaceVariant,
+                            ),
+                            SizedBox(width: widget.isDesktop ? 8 : 6),
+                            Text(
+                              widget.selectedCustomer.phone,
+                              style: TextStyle(
+                                color: cs.onSurfaceVariant,
+                                fontSize:
+                                    widget.isDesktop
+                                        ? 16
+                                        : widget.isTablet
+                                        ? 14
+                                        : 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal:
+                          widget.isDesktop
+                              ? 20
+                              : widget.isTablet
+                              ? 16
+                              : 12,
+                      vertical:
+                          widget.isDesktop
+                              ? 12
+                              : widget.isTablet
+                              ? 10
+                              : 8,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [kBlueColor, kBlueColor.withOpacity(0.6)],
+                      ),
+                      borderRadius: BorderRadius.circular(50),
+                      boxShadow: [
+                        BoxShadow(
+                          color: cs.tertiary.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.account_balance_wallet_rounded,
+                          size:
+                              widget.isDesktop
+                                  ? 18
+                                  : widget.isTablet
+                                  ? 16
+                                  : 14,
+                          color: cs.onTertiary,
+                        ),
+                        SizedBox(width: widget.isDesktop ? 8 : 6),
+                        Text(
+                          '₹${widget.selectedCustomer.schemeAmount.toStringAsFixed(0)}/mo',
+                          style: TextStyle(
+                            color: cs.onTertiary,
+                            fontWeight: FontWeight.w700,
+                            fontSize:
+                                widget.isDesktop
+                                    ? 14
+                                    : widget.isTablet
+                                    ? 12
+                                    : 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
     );
   }
 
@@ -768,17 +1425,35 @@ class _PaymentFormState extends State<_PaymentForm> {
     final nextPayableDate = widget.selectedCustomer.emaidate;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(
+        widget.isDesktop
+            ? 20
+            : widget.isTablet
+            ? 16
+            : 12,
+      ),
       decoration: BoxDecoration(
         color: Colors.grey.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(
+          widget.isDesktop
+              ? 16
+              : widget.isTablet
+              ? 14
+              : 12,
+        ),
       ),
       child: Column(
         children: [
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: EdgeInsets.all(
+                  widget.isDesktop
+                      ? 12
+                      : widget.isTablet
+                      ? 10
+                      : 8,
+                ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -786,32 +1461,68 @@ class _PaymentFormState extends State<_PaymentForm> {
                       Colors.black.withOpacity(0.1),
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(
+                    widget.isDesktop
+                        ? 14
+                        : widget.isTablet
+                        ? 12
+                        : 10,
+                  ),
                 ),
                 child: Icon(
                   Icons.event_available_rounded,
                   color: kPrimaryColor,
-                  size: 20,
+                  size:
+                      widget.isDesktop
+                          ? 24
+                          : widget.isTablet
+                          ? 20
+                          : 18,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(
+                width:
+                    widget.isDesktop
+                        ? 16
+                        : widget.isTablet
+                        ? 14
+                        : 12,
+              ),
               Expanded(
                 child: Text(
                   'Scheme started : ${_formatDate(startDate)}',
                   style: TextStyle(
                     color: cs.onSurfaceVariant,
                     fontWeight: FontWeight.w600,
-                    fontSize: 14,
+                    fontSize:
+                        widget.isDesktop
+                            ? 16
+                            : widget.isTablet
+                            ? 14
+                            : 12,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(
+            height:
+                widget.isDesktop
+                    ? 16
+                    : widget.isTablet
+                    ? 14
+                    : 12,
+          ),
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: EdgeInsets.all(
+                  widget.isDesktop
+                      ? 12
+                      : widget.isTablet
+                      ? 10
+                      : 8,
+                ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -819,18 +1530,45 @@ class _PaymentFormState extends State<_PaymentForm> {
                       Colors.black.withOpacity(0.1),
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(
+                    widget.isDesktop
+                        ? 14
+                        : widget.isTablet
+                        ? 12
+                        : 10,
+                  ),
                 ),
-                child: Icon(Icons.payment_rounded, color: kBlueColor, size: 20),
+                child: Icon(
+                  Icons.payment_rounded,
+                  color: kBlueColor,
+                  size:
+                      widget.isDesktop
+                          ? 24
+                          : widget.isTablet
+                          ? 20
+                          : 18,
+                ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(
+                width:
+                    widget.isDesktop
+                        ? 16
+                        : widget.isTablet
+                        ? 14
+                        : 12,
+              ),
               Expanded(
                 child: Text(
                   'Next Due date : ${_formatDate(nextPayableDate)}',
                   style: TextStyle(
                     color: cs.onSurfaceVariant,
                     fontWeight: FontWeight.w600,
-                    fontSize: 14,
+                    fontSize:
+                        widget.isDesktop
+                            ? 16
+                            : widget.isTablet
+                            ? 14
+                            : 12,
                   ),
                 ),
               ),
@@ -861,21 +1599,34 @@ class _PaymentFormState extends State<_PaymentForm> {
           cs: cs,
           isDark: isDark,
         ),
-        const SizedBox(height: 10),
+        SizedBox(
+          height:
+              widget.isDesktop
+                  ? 20
+                  : widget.isTablet
+                  ? 16
+                  : 12,
+        ),
         _buildAnimatedTextField(
           controller: widget.dateCtrl,
           label: 'Payment Date',
           hint: 'Select date',
           prefixIcon: Icons.calendar_today_rounded,
-          //suffixIcon: Icons.expand_more_rounded,
           readOnly: true,
-          //onTap: widget.onPickDate,
+          onTap: widget.onPickDate,
           validator:
               (v) => (v == null || v.isEmpty) ? 'Please pick a date' : null,
           cs: cs,
           isDark: isDark,
         ),
-        const SizedBox(height: 10),
+        SizedBox(
+          height:
+              widget.isDesktop
+                  ? 20
+                  : widget.isTablet
+                  ? 16
+                  : 12,
+        ),
         _buildPaymentTypeDropdown(cs, isDark),
       ],
     );
@@ -897,14 +1648,13 @@ class _PaymentFormState extends State<_PaymentForm> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        // boxShadow: [
-        //   BoxShadow(
-        //     color: cs.shadow.withOpacity(0.04),
-        //     blurRadius: 10,
-        //     offset: const Offset(0, 2),
-        //   ),
-        // ],
+        borderRadius: BorderRadius.circular(
+          widget.isDesktop
+              ? 18
+              : widget.isTablet
+              ? 16
+              : 14,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -914,10 +1664,22 @@ class _PaymentFormState extends State<_PaymentForm> {
             style: TextStyle(
               color: cs.onSurfaceVariant,
               fontWeight: FontWeight.w600,
-              fontSize: 14,
+              fontSize:
+                  widget.isDesktop
+                      ? 16
+                      : widget.isTablet
+                      ? 14
+                      : 12,
             ),
           ),
-          const SizedBox(height: 3),
+          SizedBox(
+            height:
+                widget.isDesktop
+                    ? 8
+                    : widget.isTablet
+                    ? 6
+                    : 4,
+          ),
           TextFormField(
             controller: controller,
             keyboardType: keyboardType,
@@ -925,14 +1687,34 @@ class _PaymentFormState extends State<_PaymentForm> {
             validator: validator,
             readOnly: readOnly,
             onTap: onTap,
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize:
+                  widget.isDesktop
+                      ? 16
+                      : widget.isTablet
+                      ? 15
+                      : 14,
+            ),
             decoration: InputDecoration(
               hoverColor: Colors.transparent,
               focusColor: Colors.transparent,
               hintText: hint,
               prefixIcon: Container(
-                margin: const EdgeInsets.all(8),
-                padding: const EdgeInsets.all(8),
+                margin: EdgeInsets.all(
+                  widget.isDesktop
+                      ? 12
+                      : widget.isTablet
+                      ? 10
+                      : 8,
+                ),
+                padding: EdgeInsets.all(
+                  widget.isDesktop
+                      ? 12
+                      : widget.isTablet
+                      ? 10
+                      : 8,
+                ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -940,9 +1722,24 @@ class _PaymentFormState extends State<_PaymentForm> {
                       Colors.black.withOpacity(0.1),
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(
+                    widget.isDesktop
+                        ? 14
+                        : widget.isTablet
+                        ? 12
+                        : 10,
+                  ),
                 ),
-                child: Icon(prefixIcon, color: kPrimaryColor, size: 20),
+                child: Icon(
+                  prefixIcon,
+                  color: kPrimaryColor,
+                  size:
+                      widget.isDesktop
+                          ? 22
+                          : widget.isTablet
+                          ? 20
+                          : 18,
+                ),
               ),
               suffixIcon:
                   suffixIcon != null
@@ -954,30 +1751,77 @@ class _PaymentFormState extends State<_PaymentForm> {
                       ? cs.surface.withOpacity(0.8)
                       : Colors.grey.withOpacity(0.1),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(
+                  widget.isDesktop
+                      ? 18
+                      : widget.isTablet
+                      ? 16
+                      : 14,
+                ),
                 borderSide: BorderSide.none,
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(
+                  widget.isDesktop
+                      ? 18
+                      : widget.isTablet
+                      ? 16
+                      : 14,
+                ),
                 borderSide: BorderSide.none,
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(
+                  widget.isDesktop
+                      ? 18
+                      : widget.isTablet
+                      ? 16
+                      : 14,
+                ),
                 borderSide: BorderSide.none,
               ),
               errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(
+                  widget.isDesktop
+                      ? 18
+                      : widget.isTablet
+                      ? 16
+                      : 14,
+                ),
                 borderSide: BorderSide.none,
               ),
               labelStyle: TextStyle(
                 color: cs.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
-                fontSize: 14,
+                fontSize:
+                    widget.isDesktop
+                        ? 16
+                        : widget.isTablet
+                        ? 14
+                        : 12,
               ),
-              hintStyle: TextStyle(color: cs.onSurfaceVariant.withOpacity(0.6)),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
+              hintStyle: TextStyle(
+                color: cs.onSurfaceVariant.withOpacity(0.6),
+                fontSize:
+                    widget.isDesktop
+                        ? 16
+                        : widget.isTablet
+                        ? 14
+                        : 12,
+              ),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal:
+                    widget.isDesktop
+                        ? 20
+                        : widget.isTablet
+                        ? 16
+                        : 12,
+                vertical:
+                    widget.isDesktop
+                        ? 20
+                        : widget.isTablet
+                        ? 16
+                        : 12,
               ),
             ),
           ),
@@ -988,7 +1832,15 @@ class _PaymentFormState extends State<_PaymentForm> {
 
   Widget _buildPaymentTypeDropdown(ColorScheme cs, bool isDark) {
     return Container(
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(
+          widget.isDesktop
+              ? 18
+              : widget.isTablet
+              ? 16
+              : 14,
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -997,10 +1849,22 @@ class _PaymentFormState extends State<_PaymentForm> {
             style: TextStyle(
               color: cs.onSurfaceVariant,
               fontWeight: FontWeight.w600,
-              fontSize: 14,
+              fontSize:
+                  widget.isDesktop
+                      ? 16
+                      : widget.isTablet
+                      ? 14
+                      : 12,
             ),
           ),
-          const SizedBox(height: 3),
+          SizedBox(
+            height:
+                widget.isDesktop
+                    ? 8
+                    : widget.isTablet
+                    ? 6
+                    : 4,
+          ),
           FormField<PaymentType>(
             initialValue: widget.paymentType ?? PaymentType.offline,
             validator:
@@ -1010,10 +1874,21 @@ class _PaymentFormState extends State<_PaymentForm> {
                 decoration: InputDecoration(
                   hoverColor: Colors.transparent,
                   focusColor: Colors.transparent,
-                  //labelText: 'Payment Type',
                   prefixIcon: Container(
-                    margin: const EdgeInsets.all(8),
-                    padding: const EdgeInsets.all(8),
+                    margin: EdgeInsets.all(
+                      widget.isDesktop
+                          ? 12
+                          : widget.isTablet
+                          ? 10
+                          : 8,
+                    ),
+                    padding: EdgeInsets.all(
+                      widget.isDesktop
+                          ? 12
+                          : widget.isTablet
+                          ? 10
+                          : 8,
+                    ),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
@@ -1021,12 +1896,23 @@ class _PaymentFormState extends State<_PaymentForm> {
                           Colors.black.withOpacity(0.1),
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(
+                        widget.isDesktop
+                            ? 14
+                            : widget.isTablet
+                            ? 12
+                            : 10,
+                      ),
                     ),
                     child: Icon(
                       Icons.payment_rounded,
                       color: kPrimaryColor,
-                      size: 20,
+                      size:
+                          widget.isDesktop
+                              ? 22
+                              : widget.isTablet
+                              ? 20
+                              : 18,
                     ),
                   ),
                   filled: true,
@@ -1035,28 +1921,62 @@ class _PaymentFormState extends State<_PaymentForm> {
                           ? cs.surface.withOpacity(0.8)
                           : Colors.grey.withOpacity(0.1),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(
+                      widget.isDesktop
+                          ? 18
+                          : widget.isTablet
+                          ? 16
+                          : 14,
+                    ),
                     borderSide: BorderSide.none,
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(
+                      widget.isDesktop
+                          ? 18
+                          : widget.isTablet
+                          ? 16
+                          : 14,
+                    ),
                     borderSide: BorderSide.none,
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(
+                      widget.isDesktop
+                          ? 18
+                          : widget.isTablet
+                          ? 16
+                          : 14,
+                    ),
                     borderSide: BorderSide.none,
                   ),
                   errorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(
+                      widget.isDesktop
+                          ? 18
+                          : widget.isTablet
+                          ? 16
+                          : 14,
+                    ),
                     borderSide: BorderSide.none,
                   ),
                   labelStyle: TextStyle(
                     color: cs.onSurfaceVariant,
                     fontWeight: FontWeight.w600,
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal:
+                        widget.isDesktop
+                            ? 20
+                            : widget.isTablet
+                            ? 16
+                            : 12,
+                    vertical:
+                        widget.isDesktop
+                            ? 20
+                            : widget.isTablet
+                            ? 16
+                            : 12,
                   ),
                   errorText: field.errorText,
                 ),
@@ -1065,11 +1985,16 @@ class _PaymentFormState extends State<_PaymentForm> {
                     value: field.value,
                     isExpanded: true,
                     borderRadius: BorderRadius.circular(30),
-
                     hint: Text(
                       'Select payment type',
                       style: TextStyle(
                         color: cs.onSurfaceVariant.withOpacity(0.6),
+                        fontSize:
+                            widget.isDesktop
+                                ? 16
+                                : widget.isTablet
+                                ? 14
+                                : 12,
                       ),
                     ),
                     items: [
@@ -1079,13 +2004,33 @@ class _PaymentFormState extends State<_PaymentForm> {
                           children: [
                             Icon(
                               Icons.offline_bolt_rounded,
-                              size: 16,
+                              size:
+                                  widget.isDesktop
+                                      ? 20
+                                      : widget.isTablet
+                                      ? 18
+                                      : 16,
                               color: cs.secondary,
                             ),
-                            const SizedBox(width: 8),
-                            const Text(
+                            SizedBox(
+                              width:
+                                  widget.isDesktop
+                                      ? 12
+                                      : widget.isTablet
+                                      ? 10
+                                      : 8,
+                            ),
+                            Text(
                               'Offline',
-                              style: TextStyle(fontWeight: FontWeight.w600),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize:
+                                    widget.isDesktop
+                                        ? 16
+                                        : widget.isTablet
+                                        ? 14
+                                        : 12,
+                              ),
                             ),
                           ],
                         ),
@@ -1096,13 +2041,33 @@ class _PaymentFormState extends State<_PaymentForm> {
                           children: [
                             Icon(
                               Icons.wifi_rounded,
-                              size: 16,
+                              size:
+                                  widget.isDesktop
+                                      ? 20
+                                      : widget.isTablet
+                                      ? 18
+                                      : 16,
                               color: cs.secondary,
                             ),
-                            const SizedBox(width: 8),
-                            const Text(
+                            SizedBox(
+                              width:
+                                  widget.isDesktop
+                                      ? 12
+                                      : widget.isTablet
+                                      ? 10
+                                      : 8,
+                            ),
+                            Text(
                               'Online',
-                              style: TextStyle(fontWeight: FontWeight.w600),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize:
+                                    widget.isDesktop
+                                        ? 16
+                                        : widget.isTablet
+                                        ? 14
+                                        : 12,
+                              ),
                             ),
                           ],
                         ),
@@ -1115,7 +2080,12 @@ class _PaymentFormState extends State<_PaymentForm> {
                     style: TextStyle(
                       color: cs.onSurface,
                       fontWeight: FontWeight.w600,
-                      fontSize: 16,
+                      fontSize:
+                          widget.isDesktop
+                              ? 16
+                              : widget.isTablet
+                              ? 14
+                              : 12,
                     ),
                   ),
                 ),
@@ -1129,30 +2099,35 @@ class _PaymentFormState extends State<_PaymentForm> {
 
   Widget _buildSubmitButton(ColorScheme cs, bool isDark) {
     return AbsorbPointer(
-      absorbing: !_isPaymentAllowed, // Disable button if payment not allowed
+      absorbing: !_isPaymentAllowed,
       child: Opacity(
-        opacity:
-            _isPaymentAllowed
-                ? 1.0
-                : 0.5, // Make button semi-transparent if disabled
+        opacity: _isPaymentAllowed ? 1.0 : 0.5,
         child: Container(
           width: double.infinity,
-          height: 40,
+          height:
+              widget.isDesktop
+                  ? 40
+                  : widget.isTablet
+                  ? 40
+                  : 37,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors:
                   _isPaymentAllowed
                       ? [kBlueColor, kBlueColor.withOpacity(0.8)]
-                      : [
-                        Colors.grey,
-                        Colors.grey.withOpacity(0.8),
-                      ], // Grey when disabled
+                      : [Colors.grey, Colors.grey.withOpacity(0.8)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(
+              widget.isDesktop
+                  ? 18
+                  : widget.isTablet
+                  ? 16
+                  : 14,
+            ),
             boxShadow:
-                _isPaymentAllowed
+                _isPaymentAllowed && widget.isDesktop
                     ? [
                       BoxShadow(
                         color: cs.primary.withOpacity(0.3),
@@ -1175,7 +2150,13 @@ class _PaymentFormState extends State<_PaymentForm> {
               backgroundColor: Colors.transparent,
               shadowColor: Colors.transparent,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
+                borderRadius: BorderRadius.circular(
+                  widget.isDesktop
+                      ? 18
+                      : widget.isTablet
+                      ? 16
+                      : 14,
+                ),
               ),
             ),
             child: Row(
@@ -1186,9 +2167,21 @@ class _PaymentFormState extends State<_PaymentForm> {
                       ? Icons.check_circle_rounded
                       : Icons.schedule,
                   color: _isPaymentAllowed ? cs.onPrimary : Colors.grey[600],
-                  size: 22,
+                  size:
+                      widget.isDesktop
+                          ? 24
+                          : widget.isTablet
+                          ? 22
+                          : 20,
                 ),
-                const SizedBox(width: 12),
+                SizedBox(
+                  width:
+                      widget.isDesktop
+                          ? 16
+                          : widget.isTablet
+                          ? 12
+                          : 8,
+                ),
                 Text(
                   _isPaymentAllowed
                       ? 'Submit Payment'
@@ -1196,7 +2189,12 @@ class _PaymentFormState extends State<_PaymentForm> {
                   style: TextStyle(
                     color: _isPaymentAllowed ? cs.onPrimary : Colors.grey[600],
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize:
+                        widget.isDesktop
+                            ? 18
+                            : widget.isTablet
+                            ? 16
+                            : 14,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -1226,23 +2224,63 @@ class _PaymentFormState extends State<_PaymentForm> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      padding: EdgeInsets.symmetric(
+        vertical:
+            widget.isDesktop
+                ? 16
+                : widget.isTablet
+                ? 14
+                : 12,
+        horizontal:
+            widget.isDesktop
+                ? 20
+                : widget.isTablet
+                ? 16
+                : 12,
+      ),
       decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+        color: Colors.grey.withOpacity(.1),
+        borderRadius: BorderRadius.circular(
+          widget.isDesktop
+              ? 16
+              : widget.isTablet
+              ? 14
+              : 12,
+        ),
+        //border: Border.all(color: kPrimaryColor.withOpacity(0.5)),
       ),
       child: Row(
         children: [
-          Icon(Icons.schedule, color: Colors.orange[800], size: 20),
-          const SizedBox(width: 8),
+          Icon(
+            Icons.schedule,
+            color: kErrorRedColor,
+            size:
+                widget.isDesktop
+                    ? 24
+                    : widget.isTablet
+                    ? 22
+                    : 20,
+          ),
+          SizedBox(
+            width:
+                widget.isDesktop
+                    ? 12
+                    : widget.isTablet
+                    ? 10
+                    : 8,
+          ),
           Expanded(
             child: Text(
               'Payment can be made from ${_formatDate(allowedDate)} onwards',
               style: TextStyle(
-                color: Colors.orange[800],
+                color: kErrorRedColor,
                 fontWeight: FontWeight.w600,
-                fontSize: 14,
+                fontSize:
+                    widget.isDesktop
+                        ? 16
+                        : widget.isTablet
+                        ? 14
+                        : 12,
               ),
             ),
           ),
@@ -1256,6 +2294,7 @@ class _PaymentFormState extends State<_PaymentForm> {
   }
 }
 
+// [PaymentDetails class remains the same]
 class PaymentDetails {
   final Customer customer;
   final double amount;
@@ -1272,6 +2311,7 @@ class PaymentDetails {
   });
 }
 
+// [SuccessScreen class remains the same]
 class SuccessScreen extends StatelessWidget {
   final PaymentDetails details;
   const SuccessScreen({super.key, required this.details});
@@ -1283,69 +2323,234 @@ class SuccessScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Payment Success')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Icon(Icons.verified, size: 96, color: cs.primary),
-              const SizedBox(height: 16),
-              const Text(
-                'Payment Successful!',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isDesktop = constraints.maxWidth > 1024;
+          final isTablet =
+              constraints.maxWidth >= 600 && constraints.maxWidth <= 1024;
 
-              // Customer info
-              Text(
-                'Customer: ${details.customer.name}',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+          return Center(
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth:
+                    isDesktop
+                        ? 600
+                        : isTablet
+                        ? 500
+                        : double.infinity,
+              ),
+              child: Padding(
+                padding: EdgeInsets.all(
+                  isDesktop
+                      ? 32.0
+                      : isTablet
+                      ? 24.0
+                      : 16.0,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              Text('Phone: ${details.customer.phone}'),
-              const SizedBox(height: 8),
-
-              // Payment details
-              Text('Amount: ₹${details.amount.toStringAsFixed(0)}'),
-              Text(
-                'Payment Type: ${details.paymentType == PaymentType.online ? 'Online' : 'Offline'}',
-              ),
-              Text('Date: ${_formatDate(details.paymentDate)}'),
-
-              // API response details
-              if (apiData != null) ...[
-                const SizedBox(height: 16),
-                if (apiData['message'] != null)
-                  Text(
-                    apiData['message'],
-                    style: TextStyle(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.verified,
+                      size:
+                          isDesktop
+                              ? 120
+                              : isTablet
+                              ? 96
+                              : 80,
                       color: cs.primary,
-                      fontWeight: FontWeight.w500,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                if (apiData['nextDueDate'] != null)
-                  Text('Next Due Date: ${apiData['nextDueDate']}'),
-              ],
+                    SizedBox(
+                      height:
+                          isDesktop
+                              ? 24
+                              : isTablet
+                              ? 20
+                              : 16,
+                    ),
+                    Text(
+                      'Payment Successful!',
+                      style: TextStyle(
+                        fontSize:
+                            isDesktop
+                                ? 32
+                                : isTablet
+                                ? 28
+                                : 24,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(
+                      height:
+                          isDesktop
+                              ? 20
+                              : isTablet
+                              ? 16
+                              : 12,
+                    ),
 
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed:
-                      () => Navigator.of(context).popUntil((r) => r.isFirst),
-                  child: const Text('Done'),
+                    // Customer info
+                    Text(
+                      'Customer: ${details.customer.name}',
+                      style: TextStyle(
+                        fontSize:
+                            isDesktop
+                                ? 20
+                                : isTablet
+                                ? 18
+                                : 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    Text(
+                      'Phone: ${details.customer.phone}',
+                      style: TextStyle(
+                        fontSize:
+                            isDesktop
+                                ? 16
+                                : isTablet
+                                ? 15
+                                : 14,
+                      ),
+                    ),
+                    SizedBox(
+                      height:
+                          isDesktop
+                              ? 16
+                              : isTablet
+                              ? 14
+                              : 12,
+                    ),
+
+                    // Payment details
+                    Text(
+                      'Amount: ₹${details.amount.toStringAsFixed(0)}',
+                      style: TextStyle(
+                        fontSize:
+                            isDesktop
+                                ? 16
+                                : isTablet
+                                ? 15
+                                : 14,
+                      ),
+                    ),
+                    Text(
+                      'Payment Type: ${details.paymentType == PaymentType.online ? 'Online' : 'Offline'}',
+                      style: TextStyle(
+                        fontSize:
+                            isDesktop
+                                ? 16
+                                : isTablet
+                                ? 15
+                                : 14,
+                      ),
+                    ),
+                    Text(
+                      'Date: ${_formatDate(details.paymentDate)}',
+                      style: TextStyle(
+                        fontSize:
+                            isDesktop
+                                ? 16
+                                : isTablet
+                                ? 15
+                                : 14,
+                      ),
+                    ),
+
+                    // API response details
+                    if (apiData != null) ...[
+                      SizedBox(
+                        height:
+                            isDesktop
+                                ? 24
+                                : isTablet
+                                ? 20
+                                : 16,
+                      ),
+                      if (apiData['message'] != null)
+                        Text(
+                          apiData['message'],
+                          style: TextStyle(
+                            color: cs.primary,
+                            fontWeight: FontWeight.w500,
+                            fontSize:
+                                isDesktop
+                                    ? 18
+                                    : isTablet
+                                    ? 16
+                                    : 14,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      if (apiData['nextDueDate'] != null)
+                        Text(
+                          'Next Due Date: ${apiData['nextDueDate']}',
+                          style: TextStyle(
+                            fontSize:
+                                isDesktop
+                                    ? 16
+                                    : isTablet
+                                    ? 15
+                                    : 14,
+                          ),
+                        ),
+                    ],
+
+                    SizedBox(
+                      height:
+                          isDesktop
+                              ? 48
+                              : isTablet
+                              ? 40
+                              : 32,
+                    ),
+                    SizedBox(
+                      width: double.infinity,
+                      height:
+                          isDesktop
+                              ? 56
+                              : isTablet
+                              ? 48
+                              : 44,
+                      child: FilledButton(
+                        onPressed:
+                            () => Navigator.of(
+                              context,
+                            ).popUntil((r) => r.isFirst),
+                        style: FilledButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              isDesktop
+                                  ? 16
+                                  : isTablet
+                                  ? 14
+                                  : 12,
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          'Done',
+                          style: TextStyle(
+                            fontSize:
+                                isDesktop
+                                    ? 18
+                                    : isTablet
+                                    ? 16
+                                    : 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
