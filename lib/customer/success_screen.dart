@@ -4,8 +4,13 @@ import '../../utils/colors.dart';
 
 class EnhancedSuccessScreen extends StatefulWidget {
   final PaymentDetails details;
+  final VoidCallback? onReturn;
 
-  const EnhancedSuccessScreen({super.key, required this.details});
+  const EnhancedSuccessScreen({
+    super.key,
+    required this.details,
+    this.onReturn,
+  });
 
   @override
   State<EnhancedSuccessScreen> createState() => _EnhancedSuccessScreenState();
@@ -227,14 +232,17 @@ class _EnhancedSuccessScreenState extends State<EnhancedSuccessScreen>
                   width: isMobile ? double.infinity : 500,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed:
-                        isMobile
-                            ? () =>
-                                Navigator.of(context).popUntil((r) => r.isFirst)
-                            : () => Navigator.pushNamed(
-                              context,
-                              '/customer/payments',
-                            ),
+                    onPressed: () {
+                      // Call refresh callback if provided
+                      widget.onReturn?.call();
+
+                      // Navigate back to payments
+
+                      Navigator.pushReplacementNamed(
+                        context,
+                        '/customer/payments',
+                      );
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: kBlueColor.withOpacity(.9),
                       elevation: 1,

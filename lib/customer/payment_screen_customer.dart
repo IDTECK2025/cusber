@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -128,6 +129,7 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
   bool _isLoading = true;
   String _query = '';
   Customer? _selectedCustomer;
+  Timer? _refreshTimer;
 
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _amountCtrl = TextEditingController();
@@ -150,6 +152,11 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
     _selectedDate = DateTime.now();
     _dateCtrl.text = _formatDate(DateTime.now());
     _loadCustomers();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (mounted) {
+        _loadCustomers();
+      }
+    });
   }
 
   Future<void> _loadCustomers() async {
@@ -190,6 +197,7 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
 
   @override
   void dispose() {
+    _refreshTimer?.cancel();
     _amountCtrl.dispose();
     _dateCtrl.dispose();
     super.dispose();
@@ -216,8 +224,19 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
     return '${d.day.toString().padLeft(2, '0')}-${d.month.toString().padLeft(2, '0')}-${d.year}';
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh when returning to this screen
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadCustomers();
+    });
+  }
+
   Future<void> _refreshCustomerData(String customerId) async {
     try {
+      await _loadCustomers();
+
       final result = await PaymentService.getCustomerById(customerId);
 
       if (result['success']) {
@@ -234,6 +253,7 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
       }
     } catch (e) {
       print('Error refreshing customer data: $e');
+      await _loadCustomers();
     }
   }
 
@@ -327,9 +347,20 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
           );
 
           // Navigate to enhanced success screen
+          // In both MobilePaymentScreen and CustomerPaymentScreen
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
-              builder: (_) => EnhancedSuccessScreen(details: details),
+              builder:
+                  (_) => EnhancedSuccessScreen(
+                    details: details,
+                    onReturn: () {
+                      // Refresh customer data
+                      _loadCustomers();
+                      if (_selectedCustomer != null) {
+                        _refreshCustomerData(_selectedCustomer!.id);
+                      }
+                    },
+                  ),
             ),
           );
         } else {

@@ -149,11 +149,16 @@ class _MobilePaymentScreenState extends State<MobilePaymentScreen> {
 
           // Navigate to enhanced success screen and refresh parent
           widget.onRefreshCustomer();
+
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (_) => EnhancedSuccessScreen(details: details),
             ),
           );
+
+          if (result == true) {
+            widget.onRefreshCustomer();
+          }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
