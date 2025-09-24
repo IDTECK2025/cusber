@@ -39,6 +39,8 @@ class Agent {
   final String? city;
   final String? state;
   final String? address;
+  final String? pin;
+  final String? password;
   final String role;
   final bool active;
   final DateTime createdAt;
@@ -58,6 +60,8 @@ class Agent {
     this.city,
     this.state,
     this.address,
+    this.password,
+    this.pin,
     required this.role,
     required this.active,
     required this.createdAt,
@@ -78,7 +82,9 @@ class Agent {
       branch: json['branch']?.toString(),
       city: json['city']?.toString(),
       state: json['state']?.toString(),
-      address: json['addrass']?.toString(), // Note: 'addrass' typo in your API
+      address: json['addrass']?.toString(),
+      pin: json['pin']?.toString(),
+      password: json['password']?.toString() ?? '',
       role: json['role']?.toString() ?? '',
       active:
           json['active'] is bool
@@ -257,8 +263,8 @@ class _AgentManagementScreenState extends State<AgentManagementScreen> {
             bool isTablet =
                 constraints.maxWidth > 700 && constraints.maxWidth <= 1000;
             bool isTabletMini =
-                constraints.maxWidth > 400 && constraints.maxWidth <= 700;
-            bool isMobile = constraints.maxWidth <= 400;
+                constraints.maxWidth > 600 && constraints.maxWidth <= 700;
+            bool isMobile = constraints.maxWidth <= 600;
 
             return Padding(
               padding: EdgeInsets.all(
@@ -325,12 +331,12 @@ class _AgentManagementScreenState extends State<AgentManagementScreen> {
             color: Color(0xFF1F2937),
           ),
         ),
-        if (isDesktop || isTablet) Row(children: [_buildRefreshButton()]),
+        _buildRefreshButton(isDesktop, isTablet),
       ],
     );
   }
 
-  Widget _buildRefreshButton() {
+  Widget _buildRefreshButton(bool isDesktop, bool isTablet) {
     return InkWell(
       onTap: fetchAgents,
       child: Container(
@@ -344,14 +350,15 @@ class _AgentManagementScreenState extends State<AgentManagementScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.refresh, size: 16, color: Color(0xFF6B7280)),
-            SizedBox(width: 8),
-            Text(
-              'Refresh',
-              style: TextStyle(
-                color: Color(0xFF6B7280),
-                fontWeight: FontWeight.w500,
+            if (isDesktop || isTablet) SizedBox(width: 8),
+            if (isDesktop || isTablet)
+              Text(
+                'Refresh',
+                style: TextStyle(
+                  color: Color(0xFF6B7280),
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -523,7 +530,7 @@ class _AgentManagementScreenState extends State<AgentManagementScreen> {
               child: ElevatedButton(
                 onPressed: fetchAgents,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFFEAB308),
+                  backgroundColor: kPrimaryColor,
                   foregroundColor: Colors.white,
                 ),
                 child: Text('Refresh'),
@@ -570,14 +577,14 @@ class _AgentManagementScreenState extends State<AgentManagementScreen> {
                             color: Color(0xFF1F2937),
                           ),
                         ),
-                        if (!isDesktop)
-                          Text(
-                            agent.email ?? 'N/A',
-                            style: TextStyle(
-                              color: Color(0xFF6B7280),
-                              fontSize: 12,
-                            ),
-                          ),
+                        // if (!isDesktop)
+                        //   Text(
+                        //     agent.email ?? 'N/A',
+                        //     style: TextStyle(
+                        //       color: Color(0xFF6B7280),
+                        //       fontSize: 12,
+                        //     ),
+                        //   ),
                       ],
                     ),
                   ),
@@ -592,13 +599,14 @@ class _AgentManagementScreenState extends State<AgentManagementScreen> {
                   style: TextStyle(color: Color(0xFF6B7280)),
                 ),
               ),
-            Expanded(
-              flex: 2,
-              child: Text(
-                agent.phone ?? 'N/A',
-                style: TextStyle(color: Color(0xFF1F2937)),
+            if (isDesktop || isTablet)
+              Expanded(
+                flex: 2,
+                child: Text(
+                  agent.phone ?? 'N/A',
+                  style: TextStyle(color: Color(0xFF1F2937)),
+                ),
               ),
-            ),
             Expanded(
               flex: 2,
               child: Text(
@@ -619,7 +627,7 @@ class _AgentManagementScreenState extends State<AgentManagementScreen> {
                   decoration: BoxDecoration(
                     color:
                         isExpanded
-                            ? Color(0xFFEAB308).withOpacity(0.1)
+                            ? kPrimaryColor.withOpacity(0.1)
                             : Colors.transparent,
                     borderRadius: BorderRadius.circular(6),
                   ),
@@ -627,7 +635,7 @@ class _AgentManagementScreenState extends State<AgentManagementScreen> {
                     isExpanded
                         ? Icons.keyboard_arrow_up
                         : Icons.keyboard_arrow_down,
-                    color: isExpanded ? Color(0xFFEAB308) : Color(0xFF6B7280),
+                    color: isExpanded ? kPrimaryColor : Color(0xFF6B7280),
                     size: 20,
                   ),
                 ),
@@ -687,13 +695,13 @@ class _AgentManagementScreenState extends State<AgentManagementScreen> {
                       margin: EdgeInsets.only(top: 8),
                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Color(0xFFEAB308).withOpacity(0.1),
+                        color: kPrimaryColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         agent.active ? 'Active' : 'Inactive',
                         style: TextStyle(
-                          color: Color(0xFFEAB308),
+                          color: kPrimaryColor,
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
                         ),
@@ -742,6 +750,11 @@ class _AgentManagementScreenState extends State<AgentManagementScreen> {
         _buildInfoItem("City", agent.city ?? 'N/A'),
         _buildInfoItem("Aadhaar No", agent.adhar ?? 'N/A'),
         _buildInfoItem("Pan No", agent.pancard ?? 'N/A'),
+        _buildInfoItem('ACCOUNT NUMBER ', agent.acc ?? 'N/A'),
+        _buildInfoItem('HOLDER NAME', agent.bank ?? 'N/A'),
+        _buildInfoItem('BANK BRANCH', agent.branch ?? 'N/A'),
+        _buildInfoItem('IFSC CODE', agent.ifsc ?? 'N/A'),
+        _buildInfoItem('Password', agent.password ?? 'N/A'),
       ],
     );
   }
@@ -800,7 +813,8 @@ class _AgentManagementScreenState extends State<AgentManagementScreen> {
           Expanded(flex: 3, child: Text('Agent', style: _headerTextStyle())),
           if (isDesktop)
             Expanded(flex: 3, child: Text('Email', style: _headerTextStyle())),
-          Expanded(flex: 2, child: Text('Phone', style: _headerTextStyle())),
+          if (isDesktop || isTablet)
+            Expanded(flex: 2, child: Text('Phone', style: _headerTextStyle())),
           Expanded(flex: 2, child: Text('Status', style: _headerTextStyle())),
           Container(
             width: 40,

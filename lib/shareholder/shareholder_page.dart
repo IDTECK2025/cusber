@@ -265,8 +265,8 @@ class _ShareholderManagementScreenState
             bool isTablet =
                 constraints.maxWidth > 700 && constraints.maxWidth <= 1000;
             bool isTabletMini =
-                constraints.maxWidth > 400 && constraints.maxWidth <= 700;
-            bool isMobile = constraints.maxWidth <= 400;
+                constraints.maxWidth > 600 && constraints.maxWidth <= 700;
+            bool isMobile = constraints.maxWidth <= 600;
 
             return Padding(
               padding: EdgeInsets.all(
@@ -621,14 +621,14 @@ class _ShareholderManagementScreenState
                             color: Color(0xFF1F2937),
                           ),
                         ),
-                        if (!isDesktop)
-                          Text(
-                            shareholder.email ?? 'N/A',
-                            style: TextStyle(
-                              color: Color(0xFF6B7280),
-                              fontSize: 12,
-                            ),
-                          ),
+                        // if (!isDesktop)
+                        //   Text(
+                        //     shareholder.email ?? 'N/A',
+                        //     style: TextStyle(
+                        //       color: Color(0xFF6B7280),
+                        //       fontSize: 12,
+                        //     ),
+                        //   ),
                       ],
                     ),
                   ),
@@ -655,13 +655,14 @@ class _ShareholderManagementScreenState
             //       ),
             //     ),
             //   ),
-            Expanded(
-              flex: 2,
-              child: Text(
-                shareholder.phone ?? 'N/A',
-                style: TextStyle(color: Color(0xFF1F2937)),
+            if (isDesktop || isTablet)
+              Expanded(
+                flex: 2,
+                child: Text(
+                  shareholder.phone ?? 'N/A',
+                  style: TextStyle(color: Color(0xFF1F2937)),
+                ),
               ),
-            ),
             Expanded(
               flex: 2,
               child: Text(
@@ -879,12 +880,9 @@ class _ShareholderManagementScreenState
           ),
           if (isDesktop)
             Expanded(flex: 3, child: Text('Email', style: _headerTextStyle())),
-          // if (isDesktop)
-          //   Expanded(
-          //     flex: 2,
-          //     child: Text('Customer ID', style: _headerTextStyle()),
-          //),
-          Expanded(flex: 2, child: Text('Phone', style: _headerTextStyle())),
+
+          if (isDesktop || isTablet)
+            Expanded(flex: 2, child: Text('Phone', style: _headerTextStyle())),
           Expanded(flex: 2, child: Text('status', style: _headerTextStyle())),
           Container(
             width: 40,

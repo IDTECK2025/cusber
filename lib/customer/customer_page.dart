@@ -24,6 +24,10 @@ class MyApp extends StatelessWidget {
 }
 
 class CustomerManagementScreen extends StatefulWidget {
+  final int? initialTab;
+
+  const CustomerManagementScreen({super.key, this.initialTab});
+
   @override
   _CustomerManagementScreenState createState() =>
       _CustomerManagementScreenState();
@@ -36,6 +40,12 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
   int itemsPerPage = 10;
   String? expandedCustomerId;
   String? expandedTransactionId;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedTab = widget.initialTab ?? 0; // Set initial tab
+  }
 
   // Create a GlobalKey to access AllCustomer state
   final GlobalKey<AllCustomerState> _allCustomerKey =
@@ -68,8 +78,8 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
             bool isTablet =
                 constraints.maxWidth > 700 && constraints.maxWidth <= 1000;
             bool isTabletMini =
-                constraints.maxWidth > 400 && constraints.maxWidth <= 700;
-            bool isMobile = constraints.maxWidth <= 400;
+                constraints.maxWidth > 600 && constraints.maxWidth <= 700;
+            bool isMobile = constraints.maxWidth <= 600;
 
             return Padding(
               padding: EdgeInsets.all(

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:gold_pos/customer/customer_page.dart';
 import 'package:gold_pos/dashboard.dart';
+import 'package:gold_pos/layout/layout.dart';
 import 'package:gold_pos/lock/lock.dart';
 import 'package:gold_pos/splash/welcome.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -29,17 +31,18 @@ class MyApp extends StatelessWidget {
       // Define routes but don't set initialRoute (we're using home instead)
       routes: {
         '/login': (context) => LoginPage(),
-        '/home': (context) => DashboardScreen(),
-        '/dashboard':
-            (context) =>
-                DashboardScreen(initialIndex: 0), // Explicit dashboard page
-        '/customer':
-            (context) => DashboardScreen(initialIndex: 1), // Customer page
-        '/shareholder':
-            (context) =>
-                DashboardScreen(initialIndex: 2), // Shareholder page (index 2)
-        '/agent': (context) => DashboardScreen(initialIndex: 3), // Agent page
-        '/subagent': (context) => DashboardScreen(initialIndex: 4),
+        '/home': (context) => Layout(),
+        '/dashboard': (context) => Layout(initialIndex: 0),
+        '/customer': (context) => Layout(initialIndex: 1),
+        '/shareholder': (context) => Layout(initialIndex: 2),
+        '/agent': (context) => Layout(initialIndex: 3),
+        '/subagent': (context) => Layout(initialIndex: 4),
+
+        '/customer/all': (context) => Layout(initialIndex: 1, customerTab: 0),
+        '/customer/transactions':
+            (context) => Layout(initialIndex: 1, customerTab: 1),
+        '/customer/payments':
+            (context) => Layout(initialIndex: 1, customerTab: 2),
       },
     );
   }

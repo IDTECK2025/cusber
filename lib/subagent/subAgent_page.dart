@@ -38,6 +38,8 @@ class SubAgent {
   final String? city;
   final String? state;
   final String? address;
+  final String? pin;
+  final String? password;
   final String role;
   final bool active;
   final DateTime createdAt;
@@ -57,6 +59,8 @@ class SubAgent {
     this.city,
     this.state,
     this.address,
+    this.pin,
+    this.password,
     required this.role,
     required this.active,
     required this.createdAt,
@@ -77,7 +81,9 @@ class SubAgent {
       branch: json['branch']?.toString(),
       city: json['city']?.toString(),
       state: json['state']?.toString(),
-      address: json['addrass']?.toString(), // Note: 'addrass' typo in your API
+      address: json['addrass']?.toString(),
+      pin: json['pin']?.toString(),
+      password: json['password']?.toString() ?? '',
       role: json['role']?.toString() ?? '',
       active:
           json['active'] is bool
@@ -252,8 +258,8 @@ class _SubAgentManagementScreenState extends State<SubAgentManagementScreen> {
             bool isTablet =
                 constraints.maxWidth > 700 && constraints.maxWidth <= 1000;
             bool isTabletMini =
-                constraints.maxWidth > 400 && constraints.maxWidth <= 700;
-            bool isMobile = constraints.maxWidth <= 400;
+                constraints.maxWidth > 600 && constraints.maxWidth <= 700;
+            bool isMobile = constraints.maxWidth <= 600;
 
             return Padding(
               padding: EdgeInsets.all(
@@ -565,14 +571,14 @@ class _SubAgentManagementScreenState extends State<SubAgentManagementScreen> {
                             color: Color(0xFF1F2937),
                           ),
                         ),
-                        if (!isDesktop)
-                          Text(
-                            subAgent.email ?? 'N/A',
-                            style: TextStyle(
-                              color: Color(0xFF6B7280),
-                              fontSize: 12,
-                            ),
-                          ),
+                        // if (!isDesktop)
+                        //   Text(
+                        //     subAgent.email ?? 'N/A',
+                        //     style: TextStyle(
+                        //       color: Color(0xFF6B7280),
+                        //       fontSize: 12,
+                        //     ),
+                        //   ),
                       ],
                     ),
                   ),
@@ -587,13 +593,14 @@ class _SubAgentManagementScreenState extends State<SubAgentManagementScreen> {
                   style: TextStyle(color: Color(0xFF6B7280)),
                 ),
               ),
-            Expanded(
-              flex: 2,
-              child: Text(
-                subAgent.phone ?? 'N/A',
-                style: TextStyle(color: Color(0xFF1F2937)),
+            if (isDesktop || isTablet)
+              Expanded(
+                flex: 2,
+                child: Text(
+                  subAgent.phone ?? 'N/A',
+                  style: TextStyle(color: Color(0xFF1F2937)),
+                ),
               ),
-            ),
             Expanded(
               flex: 2,
               child: Text(
@@ -737,6 +744,11 @@ class _SubAgentManagementScreenState extends State<SubAgentManagementScreen> {
         _buildInfoItem("City", subAgent.city ?? 'N/A'),
         _buildInfoItem("Aadhaar No", subAgent.adhar ?? 'N/A'),
         _buildInfoItem("Pan No", subAgent.pancard ?? 'N/A'),
+        _buildInfoItem('ACCOUNT NUMBER ', subAgent.acc ?? 'N/A'),
+        _buildInfoItem('HOLDER NAME', subAgent.bank ?? 'N/A'),
+        _buildInfoItem('BANK BRANCH', subAgent.branch ?? 'N/A'),
+        _buildInfoItem('IFSC CODE', subAgent.ifsc ?? 'N/A'),
+        _buildInfoItem('Password', subAgent.password ?? 'N/A'),
       ],
     );
   }
@@ -798,7 +810,8 @@ class _SubAgentManagementScreenState extends State<SubAgentManagementScreen> {
           ),
           if (isDesktop)
             Expanded(flex: 3, child: Text('Email', style: _headerTextStyle())),
-          Expanded(flex: 2, child: Text('Phone', style: _headerTextStyle())),
+          if (isDesktop || isTablet)
+            Expanded(flex: 2, child: Text('Phone', style: _headerTextStyle())),
           Expanded(flex: 2, child: Text('Status', style: _headerTextStyle())),
           Container(
             width: 40,

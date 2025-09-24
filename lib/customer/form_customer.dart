@@ -1517,6 +1517,14 @@ class _CustomerFormScreenState extends State<CustomerForm> {
       height: 40,
       child: Row(
         children: [
+          if (currentStep == 1)
+            IconButton(
+              onPressed: () => Navigator.pop(context),
+              icon: Icon(
+                UIcons.regularRounded.angle_small_left,
+                color: kPrimaryColor,
+              ),
+            ),
           if (currentStep > 1)
             IconButton(
               onPressed: _previousStep,
@@ -1607,7 +1615,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
           const SizedBox(height: 16),
           _buildTextField(
             'Nominee Name',
-            _emailController,
+            _nomineeController,
             keyboardType: TextInputType.text,
             isRequired: true,
             focusNode: _nomineeFocus,
@@ -1616,7 +1624,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
           const SizedBox(height: 16),
           _buildTextField(
             'Nominee Phone Number',
-            _phoneController,
+            _nomineePhoneController,
             keyboardType: TextInputType.phone,
             isRequired: true,
             focusNode: _nomineePhoneFocus,

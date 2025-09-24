@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:gold_pos/dashboard.dart';
+import 'package:gold_pos/layout/layout.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gold_pos/lock/lock.dart'; // Your LoginPage
 import 'package:gold_pos/utils/colors.dart';
@@ -20,7 +20,6 @@ class _SplashScreenState extends State<SplashScreen>
   late Animation<double> _animation;
 
   // State variables for tracking loading process
-  bool _isLoading = true;
   String _loadingMessage = "Loading...";
 
   @override
@@ -74,7 +73,7 @@ class _SplashScreenState extends State<SplashScreen>
         Timer(const Duration(seconds: 1), () {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => DashboardScreen()),
+            MaterialPageRoute(builder: (context) => Layout()),
           );
         });
       } else {
@@ -93,7 +92,6 @@ class _SplashScreenState extends State<SplashScreen>
     } catch (e) {
       setState(() {
         _loadingMessage = "Error: Unable to check login status";
-        _isLoading = false;
       });
 
       // Redirect to login page as fallback
@@ -116,7 +114,6 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     // Get screen dimensions for responsive design
     double screenWidth = MediaQuery.of(context).size.width;
-    double screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 4, 1, 40),

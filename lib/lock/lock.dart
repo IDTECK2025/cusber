@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:gold_pos/api.dart';
-import 'package:gold_pos/dashboard.dart';
+import 'package:gold_pos/layout/layout.dart';
 import 'package:gold_pos/utils/colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:marquee/marquee.dart';
@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
       initialRoute: '/login',
       routes: {
         '/login': (context) => LoginPage(),
-        '/home': (context) => DashboardScreen(),
+        '/home': (context) => Layout(),
       },
     );
   }

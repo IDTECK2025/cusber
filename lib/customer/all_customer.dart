@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:gold_pos/api.dart';
 import 'package:gold_pos/utils/avathar.dart';
 import 'package:gold_pos/utils/diamond_indicator.dart';
+import 'package:gold_pos/utils/responsive_size.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
 import '../../models/customer_model.dart';
@@ -151,9 +152,9 @@ class AllCustomerState extends State<AllCustomer> {
         MediaQuery.of(context).size.width > 700 &&
         MediaQuery.of(context).size.width <= 1000;
     final isTabletMini =
-        MediaQuery.of(context).size.width > 400 &&
+        MediaQuery.of(context).size.width > 600 &&
         MediaQuery.of(context).size.width <= 700;
-    final isMobile = MediaQuery.of(context).size.width <= 400;
+    final isMobile = MediaQuery.of(context).size.width <= 600;
 
     if (isLoading) {
       return Center(
@@ -269,6 +270,8 @@ class AllCustomerState extends State<AllCustomer> {
                                   isDesktop,
                                   isTablet,
                                   isTabletMini,
+                                  isMobile,
+                                  isExpanded,
                                 ),
                             ],
                           );
@@ -343,11 +346,13 @@ class AllCustomerState extends State<AllCustomer> {
           children: [
             _buildMobileCustomerCard(customer, customerId),
             if (isExpanded)
-              _buildExpandedCustomerDetails(
+              _buildExpandedCustomerMobileDetails(
                 customer,
                 isDesktop,
                 isTablet,
                 isTabletMini,
+                isMobile,
+                isExpanded,
               ),
           ],
         );
@@ -358,102 +363,125 @@ class AllCustomerState extends State<AllCustomer> {
   Widget _buildMobileCustomerCard(Customer customer, String customerId) {
     final isExpanded = widget.expandedCustomerId == customerId;
 
-    return Container(
-      margin: EdgeInsets.only(bottom: isExpanded ? 0 : 12),
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Color(0xFFE5E7EB)),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0xFFE5E7EB).withOpacity(0.3),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: Offset(0, 1),
+    return InkWell(
+      hoverColor: Colors.transparent,
+      focusColor: Colors.transparent,
+      onTap: () => _toggleExpansion(customerId),
+      child: Container(
+        margin: EdgeInsets.only(bottom: isExpanded ? 0 : 12),
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12).copyWith(
+            bottomLeft: isExpanded ? Radius.circular(0) : Radius.circular(12),
+            bottomRight: isExpanded ? Radius.circular(0) : Radius.circular(12),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Avatar(name: customer.fullName),
-              SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      customer.fullName,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1F2937),
+          border: Border(
+            top: BorderSide(color: Color(0xFFE5E7EB)),
+            left: BorderSide(color: Color(0xFFE5E7EB)),
+            right: BorderSide(color: Color(0xFFE5E7EB)),
+            bottom:
+                isExpanded
+                    ? BorderSide.none
+                    : BorderSide(color: Color(0xFFE5E7EB)),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0xFFE5E7EB).withOpacity(0.3),
+              spreadRadius: 1,
+              blurRadius: 3,
+              offset: Offset(0, 1),
+            ),
+          ],
+        ),
+
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Avatar(name: customer.fullName),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        customer.fullName,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1F2937),
+                        ),
                       ),
-                    ),
-                    Text(
-                      customer.email,
-                      style: TextStyle(color: Color(0xFF6B7280), fontSize: 12),
-                    ),
-                    Text(
-                      'ID: ${customer.customerId}',
-                      style: TextStyle(color: Color(0xFF6B7280), fontSize: 11),
-                    ),
-                  ],
-                ),
-              ),
-              GestureDetector(
-                onTap: () => _toggleExpansion(customerId),
-                child: Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Color(0xFFF9FAFB),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    isExpanded
-                        ? Icons.keyboard_arrow_up
-                        : Icons.keyboard_arrow_down,
-                    color: Color(0xFF6B7280),
+                      Text(
+                        customer.email,
+                        style: TextStyle(
+                          color: Color(0xFF6B7280),
+                          fontSize: 12,
+                        ),
+                      ),
+                      Text(
+                        'ID: ${customer.customerId}',
+                        style: TextStyle(
+                          color: Color(0xFF6B7280),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ],
-          ),
-          SizedBox(height: 12),
-          Text(
-            customer.location,
-            style: TextStyle(color: Color(0xFF6B7280), fontSize: 12),
-          ),
-          SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                customer.phoneNumber,
-                style: TextStyle(
-                  color: Color(0xFF1F2937),
-                  fontWeight: FontWeight.w500,
+                GestureDetector(
+                  onTap: () => _toggleExpansion(customerId),
+                  child: Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Color(0xFFF9FAFB),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      isExpanded
+                          ? Icons.keyboard_arrow_up
+                          : Icons.keyboard_arrow_down,
+                      color: Color(0xFF6B7280),
+                    ),
+                  ),
                 ),
-              ),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Color(0xFFEAB308).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '₹${customer.schemeAmount.toStringAsFixed(2)}',
+              ],
+            ),
+            SizedBox(height: 12),
+            Text(
+              customer.location,
+              style: TextStyle(color: Color(0xFF6B7280), fontSize: 12),
+            ),
+            SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  customer.phoneNumber,
                   style: TextStyle(
-                    color: Color(0xFFEAB308),
-                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1F2937),
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Color(0xFFEAB308).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '₹${customer.schemeAmount.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      color: Color(0xFFEAB308),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -621,11 +649,13 @@ class AllCustomerState extends State<AllCustomer> {
     bool isDesktop,
     bool isTablet,
     bool isTabletMini,
+    bool isMobile,
+    bool isExpanded,
   ) {
     return Container(
       padding: EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Color(0xFFF9FAFB),
+        color: Colors.white,
         border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB))),
       ),
       child: Column(
@@ -634,57 +664,52 @@ class AllCustomerState extends State<AllCustomer> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Avatar(name: customer.fullName, size: 40),
+              Avatar(
+                name: customer.fullName,
+                size:
+                    isDesktop
+                        ? 40
+                        : isTablet
+                        ? 35
+                        : 30,
+              ),
               SizedBox(width: 16),
               Expanded(
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          customer.fullName,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1F2937),
-                          ),
+                    Text(
+                      customer.fullName,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1F2937),
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      customer.email,
+                      style: TextStyle(color: Color(0xFF6B7280), fontSize: 14),
+                    ),
+                    Text(
+                      customer.phoneNumber,
+                      style: TextStyle(color: Color(0xFF6B7280), fontSize: 14),
+                    ),
+                    Container(
+                      margin: EdgeInsets.only(top: 8),
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Color(0xFFEAB308).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'ID: ${customer.customerId}',
+                        style: TextStyle(
+                          color: Color(0xFFEAB308),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
                         ),
-                        SizedBox(height: 4),
-                        Text(
-                          customer.email,
-                          style: TextStyle(
-                            color: Color(0xFF6B7280),
-                            fontSize: 14,
-                          ),
-                        ),
-                        Text(
-                          customer.phoneNumber,
-                          style: TextStyle(
-                            color: Color(0xFF6B7280),
-                            fontSize: 14,
-                          ),
-                        ),
-                        Container(
-                          margin: EdgeInsets.only(top: 8),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Color(0xFFEAB308).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            'ID: ${customer.customerId}',
-                            style: TextStyle(
-                              color: Color(0xFFEAB308),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
@@ -718,29 +743,93 @@ class AllCustomerState extends State<AllCustomer> {
     );
   }
 
-  Widget _buildMobileExpandedDetails(Customer customer) {
+  Widget _buildExpandedCustomerMobileDetails(
+    Customer customer,
+    bool isDesktop,
+    bool isTablet,
+    bool isTabletMini,
+    bool isMobile,
+    bool isExpanded,
+  ) {
     return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.all(24),
+      margin: EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Color(0xFFF9FAFB),
+        color: Colors.white,
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
-        border: Border.all(color: Color(0xFFE5E7EB)),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0xFFE5E7EB).withOpacity(0.5),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: Offset(0, 2),
-          ),
-        ],
+        border: Border(
+          bottom: BorderSide(color: Color(0xFFE5E7EB)),
+          left: BorderSide(color: Color(0xFFE5E7EB)),
+          right: BorderSide(color: Color(0xFFE5E7EB)),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.info_outline, color: Color(0xFF6B7280), size: 18),
+              Avatar(
+                name: customer.fullName,
+                size:
+                    isDesktop
+                        ? 40
+                        : isTablet
+                        ? 35
+                        : 30,
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      customer.fullName,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1F2937),
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      customer.email,
+                      style: TextStyle(color: Color(0xFF6B7280), fontSize: 14),
+                    ),
+                    Text(
+                      customer.phoneNumber,
+                      style: TextStyle(color: Color(0xFF6B7280), fontSize: 14),
+                    ),
+                    Container(
+                      margin: EdgeInsets.only(top: 8),
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Color(0xFFEAB308).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'ID: ${customer.customerId}',
+                        style: TextStyle(
+                          color: Color(0xFFEAB308),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: () => _showPdfPreview(customer),
+                icon: Icon(Icons.print_rounded),
+                tooltip: 'Print Customer Details',
+              ),
+            ],
+          ),
+          SizedBox(height: 20),
+          Row(
+            children: [
+              Icon(Icons.info_outline, color: Color(0xFF6B7280), size: 20),
               SizedBox(width: 8),
               Text(
                 'Customer Information',
@@ -752,8 +841,8 @@ class AllCustomerState extends State<AllCustomer> {
               ),
             ],
           ),
-          SizedBox(height: 16),
-          _buildMobileInfoList(customer),
+          SizedBox(height: isDesktop ? 20 : 12),
+          _buildInfoWrap(customer, isDesktop, isTablet, isTabletMini),
         ],
       ),
     );
@@ -815,42 +904,6 @@ class AllCustomerState extends State<AllCustomer> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildMobileInfoList(Customer customer) {
-    final infoItems = [
-      ['ADDRESS', customer.address],
-      ['STATE', customer.state],
-      ['CITY', customer.city],
-      ['PIN', customer.pin],
-      // ['AADHAAR NO', customer.aadhaarNo],
-      // ['PAN NUMBER', customer.panNumber],
-      // ['BANK', customer.bank],
-      // ['IFSC CODE', customer.ifsc],
-      // ['ACCOUNT NO', customer.acc],
-      // ['BRANCH', customer.branch],
-      ['Nominee Name', customer.nomineeName],
-      ['Nominee Phone', customer.nomineePhone],
-      ['JOIN DATE', _formatDate(customer.joinDate)],
-      ['Scheme Date', _formatDate(customer.schemeDate)],
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children:
-          infoItems
-              .map(
-                (item) => Padding(
-                  padding: EdgeInsets.only(bottom: 12),
-                  child: _buildInfoItem(
-                    item[0],
-                    item[1],
-                    color: item[0] == 'PIN' ? kPrimaryColor : null,
-                  ),
-                ),
-              )
-              .toList(),
     );
   }
 
