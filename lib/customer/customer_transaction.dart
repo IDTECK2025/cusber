@@ -78,8 +78,12 @@ class AllTransactionState extends State<AllTransaction> {
       return transactions;
     }
     return transactions.where((txn) {
-      return txn.name.toLowerCase().contains(widget.searchQuery.toLowerCase()) ||
-          txn.description.toLowerCase().contains(widget.searchQuery.toLowerCase()) ||
+      return txn.name.toLowerCase().contains(
+            widget.searchQuery.toLowerCase(),
+          ) ||
+          txn.description.toLowerCase().contains(
+            widget.searchQuery.toLowerCase(),
+          ) ||
           txn.type.toLowerCase().contains(widget.searchQuery.toLowerCase()) ||
           txn.status.toLowerCase().contains(widget.searchQuery.toLowerCase());
     }).toList();
@@ -88,7 +92,10 @@ class AllTransactionState extends State<AllTransaction> {
   List<Transaction> get paginatedTransactions {
     final filtered = filteredTransactions;
     final startIndex = (widget.currentPage - 1) * widget.itemsPerPage;
-    final endIndex = (startIndex + widget.itemsPerPage).clamp(0, filtered.length);
+    final endIndex = (startIndex + widget.itemsPerPage).clamp(
+      0,
+      filtered.length,
+    );
 
     if (startIndex >= filtered.length) {
       return [];
@@ -99,16 +106,30 @@ class AllTransactionState extends State<AllTransaction> {
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width > 1000;
-    final isTablet = MediaQuery.of(context).size.width > 700 && MediaQuery.of(context).size.width <= 1000;
-    final isTabletMini = MediaQuery.of(context).size.width > 400 && MediaQuery.of(context).size.width <= 700;
-    final isMobile = MediaQuery.of(context).size.width <= 400;
+    final isTablet =
+        MediaQuery.of(context).size.width > 700 &&
+        MediaQuery.of(context).size.width <= 1000;
+    final isTabletMini =
+        MediaQuery.of(context).size.width > 600 &&
+        MediaQuery.of(context).size.width <= 700;
+    final isMobile = MediaQuery.of(context).size.width <= 600;
 
     return _buildTransactionTable(isDesktop, isTablet, isMobile, isTabletMini);
   }
 
-  Widget _buildTransactionTable(bool isDesktop, bool isTablet, bool isMobile, bool isTabletMini) {
+  Widget _buildTransactionTable(
+    bool isDesktop,
+    bool isTablet,
+    bool isMobile,
+    bool isTabletMini,
+  ) {
     if (isMobile) {
-      return _buildMobileTransactionList(isDesktop, isTablet, isTabletMini, isMobile);
+      return _buildMobileTransactionList(
+        isDesktop,
+        isTablet,
+        isTabletMini,
+        isMobile,
+      );
     }
 
     return Container(
@@ -121,23 +142,32 @@ class AllTransactionState extends State<AllTransaction> {
         children: [
           _buildTableHeader(),
           Expanded(
-            child: paginatedTransactions.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-              itemCount: paginatedTransactions.length,
-              itemBuilder: (context, index) {
-                final txn = paginatedTransactions[index];
-                final txnId = '${txn.name}_$index';
-                final isExpanded = widget.expandedTransactionId == txnId;
+            child:
+                paginatedTransactions.isEmpty
+                    ? _buildEmptyState()
+                    : ListView.builder(
+                      itemCount: paginatedTransactions.length,
+                      itemBuilder: (context, index) {
+                        final txn = paginatedTransactions[index];
+                        final txnId = '${txn.name}_$index';
+                        final isExpanded =
+                            widget.expandedTransactionId == txnId;
 
-                return Column(
-                  children: [
-                    _buildTransactionRow(txn, txnId),
-                    if (isExpanded) _buildExpandedtxnDetails(txn,isDesktop,isTablet,isTabletMini,isMobile),
-                  ],
-                );
-              },
-            ),
+                        return Column(
+                          children: [
+                            _buildTransactionRow(txn, txnId),
+                            if (isExpanded)
+                              _buildExpandedtxnDetails(
+                                txn,
+                                isDesktop,
+                                isTablet,
+                                isTabletMini,
+                                isMobile,
+                              ),
+                          ],
+                        );
+                      },
+                    ),
           ),
         ],
       ),
@@ -152,12 +182,20 @@ class AllTransactionState extends State<AllTransaction> {
           Icon(Icons.receipt_long, size: 80, color: Color(0xFF6B7280)),
           SizedBox(height: 16),
           Text(
-            widget.searchQuery.isEmpty ? 'No transactions found' : 'No transactions match your search',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF1F2937)),
+            widget.searchQuery.isEmpty
+                ? 'No transactions found'
+                : 'No transactions match your search',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1F2937),
+            ),
           ),
           SizedBox(height: 8),
           Text(
-            widget.searchQuery.isEmpty ? 'Add your first transaction to get started' : 'Try adjusting your search terms',
+            widget.searchQuery.isEmpty
+                ? 'Add your first transaction to get started'
+                : 'Try adjusting your search terms',
             style: TextStyle(color: Color(0xFF6B7280)),
           ),
         ],
@@ -165,7 +203,12 @@ class AllTransactionState extends State<AllTransaction> {
     );
   }
 
-  Widget _buildMobileTransactionList(bool isDesktop, bool isTablet, bool isTabletMini, bool isMobile) {
+  Widget _buildMobileTransactionList(
+    bool isDesktop,
+    bool isTablet,
+    bool isTabletMini,
+    bool isMobile,
+  ) {
     if (paginatedTransactions.isEmpty) {
       return _buildEmptyState();
     }
@@ -180,7 +223,14 @@ class AllTransactionState extends State<AllTransaction> {
         return Column(
           children: [
             _buildMobileTransactionCard(txn, txnId),
-            if (isExpanded) _buildExpandedtxnDetails(txn,isDesktop,isTablet,isTabletMini,isMobile),
+            if (isExpanded)
+              _buildExpandedtxnDetails(
+                txn,
+                isDesktop,
+                isTablet,
+                isTabletMini,
+                isMobile,
+              ),
           ],
         );
       },
@@ -208,12 +258,20 @@ class AllTransactionState extends State<AllTransaction> {
               Expanded(
                 child: Text(
                   txn.name,
-                  style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF1F2937)),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1F2937),
+                  ),
                 ),
               ),
               GestureDetector(
                 onTap: () => _toggleExpansion(txnId),
-                child: Icon(isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: Color(0xFF6B7280)),
+                child: Icon(
+                  isExpanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  color: Color(0xFF6B7280),
+                ),
               ),
             ],
           ),
@@ -221,8 +279,17 @@ class AllTransactionState extends State<AllTransaction> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(txn.amount, style: TextStyle(color: Color(0xFF1F2937), fontWeight: FontWeight.w500)),
-              Text(txn.date, style: TextStyle(color: Color(0xFF6B7280), fontSize: 12)),
+              Text(
+                txn.amount,
+                style: TextStyle(
+                  color: Color(0xFF1F2937),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                txn.date,
+                style: TextStyle(color: Color(0xFF6B7280), fontSize: 12),
+              ),
             ],
           ),
         ],
@@ -235,7 +302,10 @@ class AllTransactionState extends State<AllTransaction> {
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Color(0xFFF9FAFB),
-        borderRadius: BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(12),
+          topRight: Radius.circular(12),
+        ),
         border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB))),
       ),
       child: Row(
@@ -245,14 +315,21 @@ class AllTransactionState extends State<AllTransaction> {
           Expanded(flex: 2, child: Text('Amount', style: _headerTextStyle())),
           Expanded(flex: 2, child: Text('Date', style: _headerTextStyle())),
           Expanded(flex: 2, child: Text('Status', style: _headerTextStyle())),
-          Container(width: 40, child: Text('Action', style: _headerTextStyle())),
+          Container(
+            width: 40,
+            child: Text('Action', style: _headerTextStyle()),
+          ),
         ],
       ),
     );
   }
 
   TextStyle _headerTextStyle() {
-    return TextStyle(color: Color(0xFF6B7280), fontWeight: FontWeight.w500, fontSize: 12);
+    return TextStyle(
+      color: Color(0xFF6B7280),
+      fontWeight: FontWeight.w500,
+      fontSize: 12,
+    );
   }
 
   Widget _buildTransactionRow(Transaction txn, String txnId) {
@@ -260,7 +337,9 @@ class AllTransactionState extends State<AllTransaction> {
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFF3F4F6)))),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFFF3F4F6))),
+      ),
       child: InkWell(
         onTap: () => _toggleExpansion(txnId),
         child: Row(
@@ -271,19 +350,52 @@ class AllTransactionState extends State<AllTransaction> {
                 children: [
                   _buildAvatar(txn.name),
                   SizedBox(width: 10),
-                  Expanded(child: Text(txn.name, style: TextStyle(fontWeight: FontWeight.w600))),
+                  Expanded(
+                    child: Text(
+                      txn.name,
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
                 ],
               ),
             ),
-            Expanded(flex: 2, child: Text(txn.type, style: TextStyle(color: txn.type == "Credit" ? Colors.green : Colors.red))),
-            Expanded(flex: 2, child: Text(txn.amount, style: TextStyle(fontWeight: FontWeight.w600))),
+            Expanded(
+              flex: 2,
+              child: Text(
+                txn.type,
+                style: TextStyle(
+                  color: txn.type == "Credit" ? Colors.green : Colors.red,
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Text(
+                txn.amount,
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
             Expanded(flex: 2, child: Text(txn.date)),
-            Expanded(flex: 2, child: Text(txn.status, style: TextStyle(color: txn.status == "Completed" ? Colors.green : Colors.orange))),
+            Expanded(
+              flex: 2,
+              child: Text(
+                txn.status,
+                style: TextStyle(
+                  color:
+                      txn.status == "Completed" ? Colors.green : Colors.orange,
+                ),
+              ),
+            ),
             Container(
               width: 40,
               child: GestureDetector(
                 onTap: () => _toggleExpansion(txnId),
-                child: Icon(isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: Color(0xFF6B7280)),
+                child: Icon(
+                  isExpanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  color: Color(0xFF6B7280),
+                ),
               ),
             ),
           ],
@@ -292,7 +404,13 @@ class AllTransactionState extends State<AllTransaction> {
     );
   }
 
-  Widget _buildExpandedtxnDetails(Transaction txn, bool isDesktop, bool isTablet, bool isTabletMini,bool isMobile) {
+  Widget _buildExpandedtxnDetails(
+    Transaction txn,
+    bool isDesktop,
+    bool isTablet,
+    bool isTabletMini,
+    bool isMobile,
+  ) {
     return Container(
       padding: EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -307,7 +425,11 @@ class AllTransactionState extends State<AllTransaction> {
             crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildAvatar(txn.name, size: isDesktop? 40 : (isTablet ? 36 : (isTabletMini ? 32 : 28))),
+              _buildAvatar(
+                txn.name,
+                size:
+                    isDesktop ? 40 : (isTablet ? 36 : (isTabletMini ? 32 : 28)),
+              ),
               SizedBox(width: 16),
               Expanded(
                 child: Text(
@@ -332,16 +454,29 @@ class AllTransactionState extends State<AllTransaction> {
           ),
           SizedBox(height: 16),
           //_buildInfoGrid(txn, isDesktop, isTablet, isTabletMini,isMobile),
-          _buildInfoWrap(txn,isDesktop,isTablet,isTabletMini,isMobile),
+          _buildInfoWrap(txn, isDesktop, isTablet, isTabletMini, isMobile),
         ],
       ),
     );
   }
 
-  Widget _buildInfoWrap(Transaction txn,isDesktop,isTablet,isTabletMini,isMobile) {
+  Widget _buildInfoWrap(
+    Transaction txn,
+    isDesktop,
+    isTablet,
+    isTabletMini,
+    isMobile,
+  ) {
     return Wrap(
-      spacing: isDesktop ? 100 : isTablet ? 100 :isTabletMini ? 70 :40,
-      runSpacing: isDesktop ? 10 :10,
+      spacing:
+          isDesktop
+              ? 100
+              : isTablet
+              ? 100
+              : isTabletMini
+              ? 70
+              : 40,
+      runSpacing: isDesktop ? 10 : 10,
       children: [
         //_buildInfoItem("Name", txn.name),
         _buildInfoItem("Type", txn.type),
@@ -352,20 +487,38 @@ class AllTransactionState extends State<AllTransaction> {
     );
   }
 
-
   Widget _buildInfoItem(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label, style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.w500)),
-        SizedBox(height: 4),
-        Text(value, style: TextStyle(fontSize: 14, color: Color(0xFF1F2937), fontWeight: FontWeight.w500)),
-      ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: Color(0xFF6B7280),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              color: Color(0xFF1F2937),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   void _toggleExpansion(String txnId) {
-    widget.onExpandedTransactionChanged?.call(widget.expandedTransactionId == txnId ? null : txnId);
+    widget.onExpandedTransactionChanged?.call(
+      widget.expandedTransactionId == txnId ? null : txnId,
+    );
   }
 
   Widget _buildAvatar(String name, {double size = 16}) {

@@ -860,10 +860,16 @@ class AllCustomerState extends State<AllCustomer> {
               : 40,
       runSpacing: isDesktop ? 30 : 10,
       children: [
+        _buildInfoItem(
+          'Next payment Date',
+          _formatDate(customer.emaidate),
+          color: kPrimaryColor,
+        ),
+        _buildInfoItem('PIN', customer.pin, color: kPrimaryColor),
         _buildInfoItem('ADDRESS', customer.address),
         _buildInfoItem('STATE', customer.state),
         _buildInfoItem('CITY', customer.city),
-        _buildInfoItem('PIN', customer.pin, color: kPrimaryColor),
+
         // _buildInfoItem('AADHAAR NO', customer.aadhaarNo),
         // _buildInfoItem('PAN NUMBER', customer.panNumber),
         // _buildInfoItem('ACCOUNT NUMBER ', customer.acc),
