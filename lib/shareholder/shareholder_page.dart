@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:gold_pos/api.dart';
 import 'package:gold_pos/shareholder/form_shareholder.dart';
 import 'package:gold_pos/utils/avathar.dart';
+import 'package:gold_pos/utils/diamond_indicator.dart';
+import 'package:gold_pos/utils/refresh_button.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart'; // Add this import
@@ -277,6 +279,11 @@ class _ShareholderManagementScreenState
                 children: [
                   _buildHeader(isDesktop, isTablet, isMobile),
                   SizedBox(height: 24),
+                  if (isMobile)
+                    Row(
+                      children: [Expanded(child: _buildAddShareholderButton())],
+                    ),
+                  if (isMobile) SizedBox(height: 24),
                   _buildSearchAndFilter(isDesktop, isTablet, isMobile),
                   SizedBox(height: 20),
                   Expanded(
@@ -336,40 +343,14 @@ class _ShareholderManagementScreenState
         if (isDesktop || isTablet)
           Row(
             children: [
-              _buildRefreshButton(),
+              RefreshButton(isDesktop, isTablet, onTap: fetchShareholders),
               SizedBox(width: 12),
               _buildAddShareholderButton(),
             ],
-          ),
+          )
+        else
+          RefreshButton(isDesktop, isTablet, onTap: fetchShareholders),
       ],
-    );
-  }
-
-  Widget _buildRefreshButton() {
-    return InkWell(
-      onTap: fetchShareholders,
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Color(0xFFE5E7EB)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.refresh, size: 16, color: Color(0xFF6B7280)),
-            SizedBox(width: 8),
-            Text(
-              'Refresh',
-              style: TextStyle(
-                color: Color(0xFF6B7280),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -475,7 +456,7 @@ class _ShareholderManagementScreenState
     bool isMobile,
   ) {
     if (isLoading) {
-      return Center(child: CircularProgressIndicator(color: kPrimaryColor));
+      return Center(child: DiamondIndicator(color: kPrimaryColor));
     }
 
     if (error != null) {
@@ -977,6 +958,17 @@ class _ShareholderManagementScreenState
 
   Widget _buildPagination(bool isDesktop, bool isTablet, bool isMobile) {
     int totalPages = totalItems > 0 ? (totalItems / itemsPerPage).ceil() : 1;
+
+    // Ensure current page is within valid range
+    if (currentPage > totalPages && totalPages > 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          currentPage = totalPages;
+        });
+      });
+    }
+
+    /// 🔹 Full pagination (for desktop/tablet)
     List<dynamic> getPageNumbers() {
       List<dynamic> pages = [];
 
@@ -1016,72 +1008,117 @@ class _ShareholderManagementScreenState
       return pages;
     }
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        IconButton(
-          onPressed:
-              currentPage > 1
-                  ? () => setState(() {
-                    currentPage--;
-                    expandedShareholderId = null;
-                  })
-                  : null,
-          icon: Icon(Icons.chevron_left),
-          color: currentPage > 1 ? kPrimaryColor : Color(0xFF9CA3AF),
-        ),
-        ...getPageNumbers().map((pageItem) {
-          if (pageItem == '...') {
-            return Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                '...',
-                style: TextStyle(
-                  color: Color(0xFF6B7280),
-                  fontWeight: FontWeight.w500,
+    /// 🔹 Compact pagination (for mobile)
+    Widget _buildCompactPagination() {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            onPressed:
+                currentPage > 1
+                    ? () {
+                      setState(() {
+                        currentPage--;
+                      });
+                    }
+                    : null,
+            icon: Icon(Icons.chevron_left),
+            color: currentPage > 1 ? kPrimaryColor : Color(0xFF9CA3AF),
+          ),
+          Text(
+            "$currentPage / $totalPages",
+            style: TextStyle(fontWeight: FontWeight.w600, color: kPrimaryColor),
+          ),
+          IconButton(
+            onPressed:
+                currentPage < totalPages
+                    ? () {
+                      setState(() {
+                        currentPage++;
+                      });
+                    }
+                    : null,
+            icon: Icon(Icons.chevron_right),
+            color: currentPage < totalPages ? kPrimaryColor : Color(0xFF9CA3AF),
+          ),
+        ],
+      );
+    }
+
+    /// 🔹 Full pagination (your existing UI)
+    Widget _buildFullPagination() {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            onPressed:
+                currentPage > 1
+                    ? () {
+                      setState(() {
+                        currentPage--;
+                      });
+                    }
+                    : null,
+            icon: Icon(Icons.chevron_left),
+            color: currentPage > 1 ? kPrimaryColor : Color(0xFF9CA3AF),
+          ),
+          ...getPageNumbers().map((pageItem) {
+            if (pageItem == '...') {
+              return Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  '...',
+                  style: TextStyle(
+                    color: Color(0xFF6B7280),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              );
+            }
+
+            int pageNum = pageItem as int;
+            bool isSelected = pageNum == currentPage;
+
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  currentPage = pageNum;
+                });
+              },
+              child: Container(
+                margin: EdgeInsets.symmetric(horizontal: 4),
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? kPrimaryColor : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  pageNum.toString(),
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : Color(0xFF6B7280),
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  ),
                 ),
               ),
             );
-          }
+          }).toList(),
+          IconButton(
+            onPressed:
+                currentPage < totalPages
+                    ? () {
+                      setState(() {
+                        currentPage++;
+                      });
+                    }
+                    : null,
+            icon: Icon(Icons.chevron_right),
+            color: currentPage < totalPages ? kPrimaryColor : Color(0xFF9CA3AF),
+          ),
+        ],
+      );
+    }
 
-          int pageNum = pageItem as int;
-          bool isSelected = pageNum == currentPage;
-
-          return GestureDetector(
-            onTap:
-                () => setState(() {
-                  currentPage = pageNum;
-                  expandedShareholderId = null;
-                }),
-            child: Container(
-              margin: EdgeInsets.symmetric(horizontal: 4),
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: isSelected ? kPrimaryColor : Colors.transparent,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                pageNum.toString(),
-                style: TextStyle(
-                  color: isSelected ? Colors.white : Color(0xFF6B7280),
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-        IconButton(
-          onPressed:
-              currentPage < totalPages
-                  ? () => setState(() {
-                    currentPage++;
-                    expandedShareholderId = null;
-                  })
-                  : null,
-          icon: Icon(Icons.chevron_right),
-          color: currentPage < totalPages ? kPrimaryColor : Color(0xFF9CA3AF),
-        ),
-      ],
-    );
+    /// 🔹 Auto-switch based on device
+    return isMobile ? _buildCompactPagination() : _buildFullPagination();
   }
 }

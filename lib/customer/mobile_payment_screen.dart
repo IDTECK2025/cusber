@@ -84,7 +84,7 @@ class _MobilePaymentScreenState extends State<MobilePaymentScreen> {
       final twentyDaysBefore = DateTime(
         nextPayableDate.year,
         nextPayableDate.month,
-        nextPayableDate.day - 320,
+        nextPayableDate.day - 20,
       );
 
       if (now.isBefore(twentyDaysBefore)) {

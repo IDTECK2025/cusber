@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gold_pos/api.dart';
 import 'package:gold_pos/layout/layout.dart';
 import 'package:gold_pos/utils/colors.dart';
+import 'package:gold_pos/utils/diamond_indicator.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:marquee/marquee.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -58,6 +61,7 @@ class UserModel {
   final List<LedgerEntry> ledger;
   final String? phone;
   final String? customerId;
+  final DateFormat? createdDate;
 
   UserModel({
     required this.id,
@@ -68,22 +72,29 @@ class UserModel {
     this.ledger = const [],
     this.phone,
     this.customerId,
+    this.createdDate,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['id'],
-      name: json['name'],
-      email: json['email'],
-      role: json['role'],
-      balance: json['balance'] ?? 0,
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      email: json['email'] ?? '',
+      role: json['role'] ?? '',
+      balance:
+          (json['balance'] is int)
+              ? json['balance']
+              : (json['balance'] != null
+                  ? int.tryParse(json['balance'].toString()) ?? 0
+                  : 0),
       ledger:
           (json['ledger'] as List<dynamic>?)
               ?.map((e) => LedgerEntry.fromJson(e))
               .toList() ??
           [],
-      phone: json['phone'], // might be null
-      customerId: json['customerId'], // might be null
+      phone: json['phone'],
+      customerId: json['customerId'],
+      createdDate: json['createdDate'],
     );
   }
 
@@ -97,6 +108,7 @@ class UserModel {
       'ledger': ledger.map((e) => e.toJson()).toList(),
       'phone': phone,
       'customerId': customerId,
+      'createdDate': createdDate,
     };
   }
 }
@@ -116,10 +128,15 @@ class LedgerEntry {
 
   factory LedgerEntry.fromJson(Map<String, dynamic> json) {
     return LedgerEntry(
-      amount: json['amount'],
-      note: json['note'],
-      payment: json['payment'], // This can now be null
-      createdAt: json['createdAt'],
+      amount:
+          (json['amount'] is int)
+              ? json['amount']
+              : (json['amount'] != null
+                  ? int.tryParse(json['amount'].toString()) ?? 0
+                  : 0),
+      note: json['note'] ?? '',
+      payment: json['payment'],
+      createdAt: json['createdAt'] ?? '',
     );
   }
 
@@ -309,6 +326,13 @@ class _LoginPageState extends State<LoginPage> {
     await prefs.setString('userEmail', loginResponse.user.email);
     await prefs.setString('userRole', loginResponse.user.role);
     await prefs.setInt('userBalance', loginResponse.user.balance);
+
+    if (loginResponse.user.createdDate != null) {
+      await prefs.setString(
+        'createdDate',
+        loginResponse.user.createdDate!.pattern ?? '',
+      );
+    }
 
     if (loginResponse.user.phone != null) {
       await prefs.setString('userPhone', loginResponse.user.phone!);
@@ -623,9 +647,9 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 child:
                     _isLoading
-                        ? CircularProgressIndicator(
+                        ? CupertinoActivityIndicator(
                           color: Colors.white,
-                          strokeWidth: 3,
+                          radius: 16,
                         )
                         : Text(
                           "LOGIN",
@@ -692,7 +716,7 @@ class _ProfileSectionState extends State<ProfileSection> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Center(child: CircularProgressIndicator());
+      return Center(child: DiamondIndicator());
     }
 
     if (userData == null) {

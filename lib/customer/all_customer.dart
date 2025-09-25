@@ -58,6 +58,8 @@ class AllCustomer extends StatefulWidget {
   final String? expandedCustomerId;
   final Function(String?)? onExpandedCustomerChanged;
   final Function(int)? onPageChanged;
+  final Function(int)? onCustomerCountChanged; // New callback
+  final VoidCallback? onDataLoaded; // New callback
 
   const AllCustomer({
     Key? key,
@@ -67,6 +69,8 @@ class AllCustomer extends StatefulWidget {
     this.expandedCustomerId,
     this.onExpandedCustomerChanged,
     this.onPageChanged,
+    this.onCustomerCountChanged,
+    this.onDataLoaded,
   }) : super(key: key);
 
   @override
@@ -98,11 +102,26 @@ class AllCustomerState extends State<AllCustomer> {
         customers = fetchedCustomers;
         isLoading = false;
       });
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        widget.onCustomerCountChanged?.call(filteredCustomers.length);
+        widget.onDataLoaded?.call();
+      });
     } catch (e) {
       setState(() {
         errorMessage = e.toString();
         isLoading = false;
       });
+    }
+  }
+
+  @override
+  void didUpdateWidget(AllCustomer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.searchQuery != widget.searchQuery) {
+      // Update filtered count when search changes
+      final filteredCount = filteredCustomers.length;
+      widget.onCustomerCountChanged?.call(filteredCount);
     }
   }
 
@@ -366,6 +385,8 @@ class AllCustomerState extends State<AllCustomer> {
     return InkWell(
       hoverColor: Colors.transparent,
       focusColor: Colors.transparent,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
       onTap: () => _toggleExpansion(customerId),
       child: Container(
         margin: EdgeInsets.only(bottom: isExpanded ? 0 : 12),
@@ -1250,7 +1271,7 @@ class AllCustomerState extends State<AllCustomer> {
       padding: const pw.EdgeInsets.only(bottom: 20),
       decoration: const pw.BoxDecoration(
         border: pw.Border(
-          bottom: pw.BorderSide(width: 2, color: PdfColors.blue),
+          bottom: pw.BorderSide(width: 2, color: PdfColor.fromInt(0xFFc49253)),
         ),
       ),
       child: pw.Row(
@@ -1264,7 +1285,7 @@ class AllCustomerState extends State<AllCustomer> {
                 style: pw.TextStyle(
                   fontSize: 24,
                   fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.blue900,
+                  color: PdfColor.fromInt(0xFFc49253),
                 ),
               ),
               pw.SizedBox(height: 4),
@@ -1302,7 +1323,7 @@ class AllCustomerState extends State<AllCustomer> {
           style: pw.TextStyle(
             fontSize: 14,
             fontWeight: pw.FontWeight.bold,
-            color: PdfColors.blue800,
+            color: PdfColor.fromInt(0xFFc49253),
           ),
         ),
         pw.SizedBox(height: 6),

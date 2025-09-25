@@ -51,6 +51,7 @@ class _LayoutState extends State<Layout> {
   String userRole = '';
   String userPhone = '';
   String userCustomerId = '';
+  String createdDate = '';
   int userBalance = 0;
   String token = '';
   bool isLoading = true;
@@ -73,6 +74,7 @@ class _LayoutState extends State<Layout> {
         userRole = prefs.getString('userRole') ?? '';
         userPhone = prefs.getString('userPhone') ?? '';
         userCustomerId = prefs.getString('userCustomerId') ?? '';
+        createdDate = prefs.getString('createdDate') ?? '';
         userBalance = prefs.getInt('userBalance') ?? 0;
         token = prefs.getString('token') ?? '';
         isLoading = false;
@@ -86,6 +88,7 @@ class _LayoutState extends State<Layout> {
       print('Balance: $userBalance');
       print('Phone: $userPhone');
       print('Customer ID: $userCustomerId');
+      print('Created Date: $createdDate');
     } catch (e) {
       print('Error loading user data: $e');
       setState(() {
@@ -139,6 +142,7 @@ class _LayoutState extends State<Layout> {
         await prefs.remove('userCustomerId');
         await prefs.remove('userShareId');
         await prefs.remove('userCusId');
+        await prefs.remove('createdDate');
         await prefs.remove('loginResponse');
 
         // Navigate to login screen
@@ -493,104 +497,240 @@ class _LayoutState extends State<Layout> {
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Container(
-            width: 600,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Header with avatar
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 30,
-                      backgroundColor: kPrimaryColor,
-                      child: Text(
-                        userName.split(' ').map((n) => n[0]).take(2).join(),
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.zero,
+          child: Center(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // Determine device type and responsive values
+                final isDesktop = constraints.maxWidth > 1200;
+                final isTablet =
+                    constraints.maxWidth > 600 && constraints.maxWidth <= 1200;
+                final isMobile = constraints.maxWidth <= 600;
+
+                // Responsive dimensions
+                final dialogWidth =
+                    isDesktop
+                        ? 450.0
+                        : isTablet
+                        ? constraints.maxWidth * 0.7
+                        : constraints.maxWidth * 0.9;
+
+                final horizontalMargin = isMobile ? 16.0 : 24.0;
+                final verticalMargin = isMobile ? 20.0 : 40.0;
+
+                // Responsive text sizes
+                final nameTextSize =
+                    isMobile
+                        ? 24.0
+                        : isTablet
+                        ? 26.0
+                        : 28.0;
+                final handleTextSize = isMobile ? 14.0 : 16.0;
+                final roleTextSize = isMobile ? 14.0 : 16.0;
+                final statValueSize = isMobile ? 16.0 : 18.0;
+                final statLabelSize = isMobile ? 10.0 : 12.0;
+
+                // Avatar size
+                final avatarSize =
+                    isMobile
+                        ? 100.0
+                        : isTablet
+                        ? 110.0
+                        : 120.0;
+                final avatarTextSize =
+                    isMobile
+                        ? 30.0
+                        : isTablet
+                        ? 33.0
+                        : 36.0;
+
+                return Container(
+                  width: dialogWidth,
+                  height: isMobile ? null : null,
+                  margin: EdgeInsets.symmetric(
+                    horizontal: horizontalMargin,
+                    vertical: verticalMargin,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(isMobile ? 16 : 20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Header Section
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(isMobile ? 24 : 32),
+                          child: Column(
+                            children: [
+                              // Close button
+                              Align(
+                                alignment: Alignment.topRight,
+                                child: GestureDetector(
+                                  onTap: () => Navigator.of(context).pop(),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[100],
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Icon(
+                                      Icons.close,
+                                      size: isMobile ? 14 : 16,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: isMobile ? 12 : 16),
+                              // Profile Avatar
+                              Container(
+                                width: avatarSize,
+                                height: avatarSize,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      kPrimaryColor,
+                                      kPrimaryColor.withOpacity(0.8),
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: kPrimaryColor.withOpacity(0.3),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 10),
+                                    ),
+                                  ],
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    userName
+                                        .split(' ')
+                                        .map((n) => n[0])
+                                        .take(2)
+                                        .join(),
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: avatarTextSize,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: isMobile ? 16 : 24),
+                              // User Name
+                              Text(
+                                userName.isNotEmpty ? userName : 'N/A',
+                                style: TextStyle(
+                                  fontSize: nameTextSize,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF1F2937),
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 8),
+                              // User Handle/Email
+                              Text(
+                                email.isNotEmpty
+                                    ? '@${email.split('@')[0]}'
+                                    : '@user',
+                                style: TextStyle(
+                                  fontSize: handleTextSize,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              SizedBox(height: isMobile ? 12 : 16),
+                              // Role Description
+                              Text(
+                                userRole.isNotEmpty ? userRole : 'User',
+                                style: TextStyle(
+                                  fontSize: roleTextSize,
+                                  color: Colors.grey[700],
+                                  height: 1.5,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'User Profile',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1F2937),
-                            ),
-                          ),
-                          Text(
-                            'Account Details',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: Icon(Icons.close, color: Colors.grey),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
 
-                // User details
-                _buildProfileDetailRow(
-                  'Full Name',
-                  userName.isNotEmpty ? userName : 'N/A',
-                  Icons.person,
-                ),
-                _buildProfileDetailRow(
-                  'Email',
-                  email.isNotEmpty ? email : 'N/A',
-                  Icons.email,
-                ),
-                _buildProfileDetailRow(
-                  'Role',
-                  userRole.isNotEmpty ? userRole : 'N/A',
-                  Icons.work,
-                ),
-                _buildProfileDetailRow(
-                  'Phone',
-                  userPhone.isNotEmpty ? userPhone : 'N/A',
-                  Icons.phone,
-                ),
-                _buildProfileDetailRow(
-                  'Customer ID',
-                  userCustomerId.isNotEmpty ? userCustomerId : 'N/A',
-                  Icons.badge,
-                ),
-                _buildProfileDetailRow(
-                  'Balance',
-                  '\$${userBalance.toString()}',
-                  Icons.account_balance_wallet,
-                ),
-                _buildProfileDetailRow(
-                  'Share ID',
-                  userShareId.isNotEmpty ? userShareId : 'N/A',
-                  Icons.share,
-                ),
+                        // Stats Section - Responsive Layout
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isMobile ? 24 : 32,
+                            vertical: isMobile ? 12 : 16,
+                          ),
+                          child: _buildStats(statValueSize, statLabelSize),
+                        ),
 
-                const SizedBox(height: 24),
-              ],
+                        SizedBox(height: isMobile ? 12 : 16),
+
+                        // Contact Details Section
+                        Container(
+                          width: double.infinity,
+                          margin: EdgeInsets.symmetric(
+                            horizontal: isMobile ? 24 : 32,
+                          ),
+                          padding: EdgeInsets.all(isMobile ? 16 : 24),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[50],
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Contact Details',
+                                style: TextStyle(
+                                  fontSize: isMobile ? 14 : 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[800],
+                                ),
+                              ),
+                              SizedBox(height: isMobile ? 12 : 16),
+                              _buildContactDetailRow(
+                                'Email',
+                                email.isNotEmpty ? email : 'N/A',
+                                Icons.email_outlined,
+                                isMobile,
+                              ),
+                              _buildContactDetailRow(
+                                'Phone',
+                                userPhone.isNotEmpty ? userPhone : 'N/A',
+                                Icons.phone_outlined,
+                                isMobile,
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        SizedBox(height: isMobile ? 24 : 32),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         );
@@ -598,34 +738,132 @@ class _LayoutState extends State<Layout> {
     );
   }
 
-  Widget _buildProfileDetailRow(String label, String value, IconData icon) {
+  // Desktop/Tablet stats layout (horizontal)
+  Widget _buildStats(double valueSize, double labelSize) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        Expanded(
+          child: _buildStatItem(
+            'Balance',
+            '\₹${userBalance.toString()}',
+            valueSize,
+            labelSize,
+          ),
+        ),
+        Container(height: 40, width: 1, color: Colors.grey[300]),
+        Expanded(
+          child: _buildStatItem('Since', createdDate, valueSize, labelSize),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatItem(
+    String label,
+    String value,
+    double valueSize,
+    double labelSize,
+  ) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: valueSize,
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF1F2937),
+          ),
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: labelSize,
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w500,
+          ),
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContactDetailRow(
+    String label,
+    String value,
+    IconData icon,
+    bool isMobile,
+  ) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: kPrimaryColor),
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF374151),
+      padding: const EdgeInsets.only(bottom: 12),
+      child:
+          isMobile
+              ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(icon, size: 16, color: Colors.grey[600]),
+                      const SizedBox(width: 8),
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 24),
+                    child: Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF1F2937),
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              )
+              : Row(
+                children: [
+                  Icon(icon, size: 18, color: Colors.grey[600]),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ),
+
+                  Flexible(
+                    child: Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF1F2937),
+                      ),
+                      textAlign: TextAlign.right,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Text(
-              value,
-              style: TextStyle(fontSize: 14, color: Color(0xFF1F2937)),
-              textAlign: TextAlign.right,
-            ),
-          ),
-        ],
-      ),
     );
   }
 

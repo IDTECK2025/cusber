@@ -1179,7 +1179,7 @@ class PaymentFormState extends State<PaymentForm> {
     if (widget.selectedCustomer.emaidate == null) return true;
     final now = DateTime.now();
     final twentyDaysBefore = widget.selectedCustomer.emaidate!.subtract(
-      const Duration(days: 320),
+      const Duration(days: 20),
     );
     return now.isAfter(twentyDaysBefore) ||
         now.isAtSameMomentAs(twentyDaysBefore);

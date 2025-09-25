@@ -7,9 +7,12 @@ import 'package:gold_pos/splash/welcome.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:device_preview/device_preview.dart';
 
+import 'customer/customer_transaction.dart';
+
 void main() {
   // Ensure initialized
   WidgetsFlutterBinding.ensureInitialized();
+  TransactionService.initializeAuth();
   runApp(DevicePreview(enabled: true, builder: (context) => const MyApp()));
 }
 

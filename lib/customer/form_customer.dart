@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_phosphor_icons/flutter_phosphor_icons.dart';
 import 'package:gold_pos/api.dart';
 import 'package:gold_pos/models/customer_model.dart';
+import 'package:gold_pos/utils/diamond_indicator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
@@ -332,13 +333,60 @@ class _CustomerFormScreenState extends State<CustomerForm> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return const AlertDialog(
-          content: Row(
-            children: [
-              CircularProgressIndicator(color: kPrimaryColor),
-              SizedBox(width: 20),
-              Text('Creating customer account...'), // Simplified message
-            ],
+        return Dialog(
+          insetPadding: EdgeInsets.all(16), //
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          elevation: 8,
+          backgroundColor: Colors.white,
+          child: Container(
+            padding: EdgeInsets.all(24),
+            width:
+                MediaQuery.of(context).size.width < 600
+                    ? double.infinity
+                    : (MediaQuery.of(context).size.width < 1000)
+                    ? 450
+                    : 500,
+            height:
+                MediaQuery.of(context).size.width < 600
+                    ? null
+                    : (MediaQuery.of(context).size.width < 1000)
+                    ? 200
+                    : 250,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Enhanced diamond indicator section
+                Container(
+                  padding: EdgeInsets.all(16),
+                  child: DiamondIndicator(color: kPrimaryColor, size: 10),
+                ),
+                SizedBox(height: 20),
+                Text(
+                  'Creating Account',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Setting up your customer profile...',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w400,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 20),
+              ],
+            ),
           ),
         );
       },
@@ -360,6 +408,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
         emaidate: formatDate(_dateController.text), // Keep if backend needs it
       );
 
+      await Future.delayed(const Duration(seconds: 5));
+
       Navigator.of(context).pop(); // Close loading dialog
 
       setState(() {
@@ -376,6 +426,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
         _showErrorDialog(result['message'] ?? 'Unknown error occurred');
       }
     } catch (e) {
+      await Future.delayed(const Duration(seconds: 5));
       Navigator.of(context).pop(); // Close loading dialog
       setState(() {
         _isSubmitting = false;
@@ -426,6 +477,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
+          backgroundColor: kBackgroundColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -434,12 +486,12 @@ class _CustomerFormScreenState extends State<CustomerForm> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: kPrimaryColor.withOpacity(0.1),
+                  color: kBlueColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Icon(
                   Icons.check_circle,
-                  color: kPrimaryColor,
+                  color: kBlueColor,
                   size: 24,
                 ),
               ),
@@ -447,7 +499,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
               const Expanded(
                 child: Text(
                   'Account Created Successfully!',
-                  style: TextStyle(fontSize: 18),
+                  style: TextStyle(fontSize: 18, color: kBlueColor),
                 ),
               ),
             ],
@@ -486,10 +538,24 @@ class _CustomerFormScreenState extends State<CustomerForm> {
             ElevatedButton(
               onPressed: () async {
                 Navigator.of(context).pop();
+                _resetForm();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kBlueColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text('Ok'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
                 await _showPdfPreview(userData);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: kPrimaryColor,
+                backgroundColor: kPrimaryColor.withOpacity(.8),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -526,7 +592,10 @@ class _CustomerFormScreenState extends State<CustomerForm> {
             ),
             child: Container(
               width: 700,
-              height: MediaQuery.of(context).size.height * 0.8,
+              height:
+                  MediaQuery.of(context).size.width < 600
+                      ? MediaQuery.of(context).size.height * 0.65
+                      : MediaQuery.of(context).size.height * 0.8,
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
@@ -535,119 +604,115 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                 children: [
                   // PDF Preview
                   Expanded(
-                    child: ClipRRect(
-                      //padding: const EdgeInsets.all(16),
-                      borderRadius: BorderRadius.circular(12),
-                      child: PdfPreview(
-                        build: (format) => pdf.save(),
-                        padding: EdgeInsets.zero,
-                        allowPrinting: false,
-                        allowSharing: false,
-                        canChangeOrientation: false,
-                        canChangePageFormat: false,
-                        canDebug: false,
-                        maxPageWidth: 700,
-                        initialPageFormat: PdfPageFormat.a4,
-                        pdfFileName:
-                            'Customer_${customerData['customerId'] ?? DateTime.now().millisecondsSinceEpoch}.pdf',
-                        pdfPreviewPageDecoration: BoxDecoration(
-                          color: Colors.white,
-                        ),
+                    child: Stack(
+                      children: [
+                        ClipRRect(
+                          //padding: const EdgeInsets.all(16),
+                          borderRadius: BorderRadius.circular(12),
+                          child: PdfPreview(
+                            build: (format) => pdf.save(),
+                            padding: EdgeInsets.zero,
+                            allowPrinting: false,
+                            allowSharing: false,
+                            canChangeOrientation: false,
+                            canChangePageFormat: false,
+                            canDebug: false,
+                            maxPageWidth: 700,
+                            initialPageFormat: PdfPageFormat.a4,
+                            pdfFileName:
+                                'Customer_${customerData['customerId'] ?? DateTime.now().millisecondsSinceEpoch}.pdf',
+                            pdfPreviewPageDecoration: BoxDecoration(
+                              color: Colors.white,
+                            ),
 
-                        actionBarTheme: const PdfActionBarTheme(
-                          backgroundColor: Colors.white,
-                          height: 50,
-                          elevation: 2,
-                          actionSpacing: 20,
-                          //alignment: WrapAlignment.spaceBetween,
-                          //runAlignment: WrapAlignment.center,
-                          //crossAxisAlignment: WrapCrossAlignment.center,
-                        ),
-                        actions: [
-                          Row(
-                            children: [
-                              // Expanded(
-                              //   child: OutlinedButton(
-                              //     onPressed: () => Navigator.of(context).pop(),
-                              //     style: OutlinedButton.styleFrom(
-                              //       side: BorderSide(color: Colors.grey[400]!),
-                              //       shape: RoundedRectangleBorder(
-                              //         borderRadius: BorderRadius.circular(8),
-                              //       ),
-                              //     ),
-                              //     child: const Text(
-                              //       'Cancel',
-                              //       style: TextStyle(
-                              //         color: Colors.grey,
-                              //         fontWeight: FontWeight.w600,
-                              //       ),
-                              //     ),
-                              //   ),
-                              // ),
-                              // const SizedBox(
-                              //   width: 12,
-                              // ), // spacing between buttons
-                              Expanded(
-                                child: ElevatedButton(
-                                  onPressed: () => _printPDF(customerData),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: kBlueColor,
-                                    minimumSize: const Size.fromHeight(60),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(0),
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'PRINT',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              // const SizedBox(
-                              //   width: 12,
-                              // ), // spacing between buttons
-                              Expanded(
-                                child: ElevatedButton(
-                                  onPressed: () async {
-                                    Navigator.of(context).pop();
-                                    await _smartDownloadPDF(customerData);
-                                    _resetForm();
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: kPrimaryColor,
-                                    minimumSize: const Size.fromHeight(60),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(0),
-                                    ),
-                                  ),
-                                  child: const Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.download,
-                                        size: 16,
-                                        color: Colors.white,
+                            actionBarTheme: const PdfActionBarTheme(
+                              backgroundColor: Colors.white,
+                              height: 50,
+                              elevation: 2,
+                              actionSpacing: 20,
+                            ),
+                            actions: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: ElevatedButton(
+                                      onPressed: () => _printPDF(customerData),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: kBlueColor,
+                                        minimumSize: const Size.fromHeight(60),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            0,
+                                          ),
+                                        ),
                                       ),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        'Download',
+                                      child: const Text(
+                                        'PRINT',
                                         style: TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
-                                    ],
+                                    ),
                                   ),
-                                ),
+                                  // const SizedBox(
+                                  //   width: 12,
+                                  // ), // spacing between buttons
+                                  Expanded(
+                                    child: ElevatedButton(
+                                      onPressed: () async {
+                                        Navigator.of(context).pop();
+                                        await _smartDownloadPDF(customerData);
+                                        _resetForm();
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: kPrimaryColor,
+                                        minimumSize: const Size.fromHeight(60),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            0,
+                                          ),
+                                        ),
+                                      ),
+                                      child: const Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.download,
+                                            size: 16,
+                                            color: Colors.white,
+                                          ),
+                                          SizedBox(width: 4),
+                                          Text(
+                                            'Download',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
+                        ),
+                        Positioned(
+                          top: 12,
+                          right: 12,
+                          child: IconButton(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              _resetForm();
+                            },
+                            icon: Icon(Icons.close, color: Colors.grey),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -661,7 +726,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error generating PDF: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: kPrimaryColor,
         ),
       );
     }
@@ -861,7 +926,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
       padding: const pw.EdgeInsets.only(bottom: 20),
       decoration: const pw.BoxDecoration(
         border: pw.Border(
-          bottom: pw.BorderSide(width: 2, color: PdfColors.blue),
+          bottom: pw.BorderSide(width: 2, color: PdfColor.fromInt(0xFFc49253)),
         ),
       ),
       child: pw.Row(
@@ -875,7 +940,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
                 style: pw.TextStyle(
                   fontSize: 24,
                   fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.blue900,
+                  color: PdfColor.fromInt(0xFFc49253),
                 ),
               ),
               pw.SizedBox(height: 4),
@@ -976,7 +1041,7 @@ class _CustomerFormScreenState extends State<CustomerForm> {
           style: pw.TextStyle(
             fontSize: 14, // Reduced from 16 to save space
             fontWeight: pw.FontWeight.bold,
-            color: PdfColors.blue800,
+            color: PdfColor.fromInt(0xFFc49253),
           ),
         ),
         pw.SizedBox(height: 6), // Reduced from 8 to save space
@@ -1609,8 +1674,8 @@ class _CustomerFormScreenState extends State<CustomerForm> {
             _phoneController,
             keyboardType: TextInputType.phone,
             isRequired: true,
-            focusNode: _nomineeFocus,
-            //nextFocusNode: _aadhaarFocus,
+            focusNode: _phoneFocus,
+            nextFocusNode: _nomineeFocus,
           ),
           const SizedBox(height: 16),
           _buildTextField(

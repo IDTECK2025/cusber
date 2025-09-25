@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_phosphor_icons/flutter_phosphor_icons.dart';
 import 'package:gold_pos/api.dart';
+import 'package:gold_pos/utils/diamond_indicator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uicons/uicons.dart';
 import 'package:http/http.dart' as http;
@@ -360,9 +361,9 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return const AlertDialog(
-          content: Row(
+          content: Column(
             children: [
-              CircularProgressIndicator(color: kPrimaryColor),
+              DiamondIndicator(color: kPrimaryColor),
               SizedBox(width: 20),
               Text('Creating shareholder account...'),
             ],

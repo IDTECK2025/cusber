@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gold_pos/api.dart';
 import 'package:gold_pos/utils/avathar.dart';
+import 'package:gold_pos/utils/diamond_indicator.dart';
+import 'package:gold_pos/utils/refresh_button.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -331,37 +333,8 @@ class _AgentManagementScreenState extends State<AgentManagementScreen> {
             color: Color(0xFF1F2937),
           ),
         ),
-        _buildRefreshButton(isDesktop, isTablet),
+        RefreshButton(isDesktop, isTablet, onTap: fetchAgents),
       ],
-    );
-  }
-
-  Widget _buildRefreshButton(bool isDesktop, bool isTablet) {
-    return InkWell(
-      onTap: fetchAgents,
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Color(0xFFE5E7EB)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.refresh, size: 16, color: Color(0xFF6B7280)),
-            if (isDesktop || isTablet) SizedBox(width: 8),
-            if (isDesktop || isTablet)
-              Text(
-                'Refresh',
-                style: TextStyle(
-                  color: Color(0xFF6B7280),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -432,7 +405,7 @@ class _AgentManagementScreenState extends State<AgentManagementScreen> {
     bool isMobile,
   ) {
     if (isLoading) {
-      return Center(child: CircularProgressIndicator(color: kPrimaryColor));
+      return Center(child: DiamondIndicator(color: kPrimaryColor));
     }
 
     if (error != null) {
@@ -909,6 +882,17 @@ class _AgentManagementScreenState extends State<AgentManagementScreen> {
 
   Widget _buildPagination(bool isDesktop, bool isTablet, bool isMobile) {
     int totalPages = totalItems > 0 ? (totalItems / itemsPerPage).ceil() : 1;
+
+    // Ensure current page is within valid range
+    if (currentPage > totalPages && totalPages > 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          currentPage = totalPages;
+        });
+      });
+    }
+
+    /// 🔹 Full pagination (for desktop/tablet)
     List<dynamic> getPageNumbers() {
       List<dynamic> pages = [];
 
@@ -948,72 +932,117 @@ class _AgentManagementScreenState extends State<AgentManagementScreen> {
       return pages;
     }
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        IconButton(
-          onPressed:
-              currentPage > 1
-                  ? () => setState(() {
-                    currentPage--;
-                    expandedAgentId = null;
-                  })
-                  : null,
-          icon: Icon(Icons.chevron_left),
-          color: currentPage > 1 ? kPrimaryColor : Color(0xFF9CA3AF),
-        ),
-        ...getPageNumbers().map((pageItem) {
-          if (pageItem == '...') {
-            return Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                '...',
-                style: TextStyle(
-                  color: Color(0xFF6B7280),
-                  fontWeight: FontWeight.w500,
+    /// 🔹 Compact pagination (for mobile)
+    Widget _buildCompactPagination() {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            onPressed:
+                currentPage > 1
+                    ? () {
+                      setState(() {
+                        currentPage--;
+                      });
+                    }
+                    : null,
+            icon: Icon(Icons.chevron_left),
+            color: currentPage > 1 ? kPrimaryColor : Color(0xFF9CA3AF),
+          ),
+          Text(
+            "$currentPage / $totalPages",
+            style: TextStyle(fontWeight: FontWeight.w600, color: kPrimaryColor),
+          ),
+          IconButton(
+            onPressed:
+                currentPage < totalPages
+                    ? () {
+                      setState(() {
+                        currentPage++;
+                      });
+                    }
+                    : null,
+            icon: Icon(Icons.chevron_right),
+            color: currentPage < totalPages ? kPrimaryColor : Color(0xFF9CA3AF),
+          ),
+        ],
+      );
+    }
+
+    /// 🔹 Full pagination (your existing UI)
+    Widget _buildFullPagination() {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            onPressed:
+                currentPage > 1
+                    ? () {
+                      setState(() {
+                        currentPage--;
+                      });
+                    }
+                    : null,
+            icon: Icon(Icons.chevron_left),
+            color: currentPage > 1 ? kPrimaryColor : Color(0xFF9CA3AF),
+          ),
+          ...getPageNumbers().map((pageItem) {
+            if (pageItem == '...') {
+              return Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  '...',
+                  style: TextStyle(
+                    color: Color(0xFF6B7280),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              );
+            }
+
+            int pageNum = pageItem as int;
+            bool isSelected = pageNum == currentPage;
+
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  currentPage = pageNum;
+                });
+              },
+              child: Container(
+                margin: EdgeInsets.symmetric(horizontal: 4),
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? kPrimaryColor : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  pageNum.toString(),
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : Color(0xFF6B7280),
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  ),
                 ),
               ),
             );
-          }
+          }).toList(),
+          IconButton(
+            onPressed:
+                currentPage < totalPages
+                    ? () {
+                      setState(() {
+                        currentPage++;
+                      });
+                    }
+                    : null,
+            icon: Icon(Icons.chevron_right),
+            color: currentPage < totalPages ? kPrimaryColor : Color(0xFF9CA3AF),
+          ),
+        ],
+      );
+    }
 
-          int pageNum = pageItem as int;
-          bool isSelected = pageNum == currentPage;
-
-          return GestureDetector(
-            onTap:
-                () => setState(() {
-                  currentPage = pageNum;
-                  expandedAgentId = null;
-                }),
-            child: Container(
-              margin: EdgeInsets.symmetric(horizontal: 4),
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: isSelected ? kPrimaryColor : Colors.transparent,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                pageNum.toString(),
-                style: TextStyle(
-                  color: isSelected ? Colors.white : Color(0xFF6B7280),
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-        IconButton(
-          onPressed:
-              currentPage < totalPages
-                  ? () => setState(() {
-                    currentPage++;
-                    expandedAgentId = null;
-                  })
-                  : null,
-          icon: Icon(Icons.chevron_right),
-          color: currentPage < totalPages ? kPrimaryColor : Color(0xFF9CA3AF),
-        ),
-      ],
-    );
+    /// 🔹 Auto-switch based on device
+    return isMobile ? _buildCompactPagination() : _buildFullPagination();
   }
 }

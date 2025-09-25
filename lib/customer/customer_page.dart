@@ -37,17 +37,27 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
   int selectedTab = 0;
   String searchQuery = '';
   int currentPage = 1;
-  int itemsPerPage = 10;
+  int itemsPerPage = 25;
   String? expandedCustomerId;
   String? expandedTransactionId;
+
+  // Add these variables to track counts
+  int _customerCount = 0;
+  int _transactionCount = 0;
+  bool _isDataLoaded = false;
 
   @override
   void initState() {
     super.initState();
-    selectedTab = widget.initialTab ?? 0; // Set initial tab
+    selectedTab = widget.initialTab ?? 0;
+
+    // Initialize data after frame is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateDataCounts();
+    });
   }
 
-  // Create a GlobalKey to access AllCustomer state
+  // Create GlobalKeys
   final GlobalKey<AllCustomerState> _allCustomerKey =
       GlobalKey<AllCustomerState>();
   final GlobalKey<AllTransactionState> _allTransactionKey =
@@ -55,16 +65,68 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
 
   final List<String> tabs = ['All Customers', 'Transaction', 'Payment'];
 
-  // Get customer count from AllCustomer
+  // Updated getter with proper fallback
   int get currentTabCount {
     if (selectedTab == 0) {
-      // Customers tab
-      return _allCustomerKey.currentState?.customers.length ?? 0;
+      return _customerCount;
     } else if (selectedTab == 1) {
-      // Transactions tab
-      return _allTransactionKey.currentState?.transactions.length ?? 0;
+      return _transactionCount;
     }
-    return 0; // default for other tabs
+    return 0;
+  }
+
+  // Method to update data counts
+  void _updateDataCounts() {
+    if (selectedTab == 0 && _allCustomerKey.currentState != null) {
+      final customerState = _allCustomerKey.currentState!;
+      final filteredCount = _getFilteredCustomerCount(customerState);
+      if (_customerCount != filteredCount) {
+        setState(() {
+          _customerCount = filteredCount;
+          _isDataLoaded = true;
+        });
+      }
+    } else if (selectedTab == 1 && _allTransactionKey.currentState != null) {
+      final transactionState = _allTransactionKey.currentState!;
+      final filteredCount = _getFilteredTransactionCount(transactionState);
+      if (_transactionCount != filteredCount) {
+        setState(() {
+          _transactionCount = filteredCount;
+          _isDataLoaded = true;
+        });
+      }
+    }
+  }
+
+  // Helper method to get filtered customer count
+  int _getFilteredCustomerCount(AllCustomerState customerState) {
+    if (searchQuery.isEmpty) {
+      return customerState.customers.length;
+    }
+    return customerState.filteredCustomers.length;
+  }
+
+  // Helper method to get filtered transaction count
+  int _getFilteredTransactionCount(AllTransactionState transactionState) {
+    if (searchQuery.isEmpty) {
+      return transactionState.transactions.length;
+    }
+    return transactionState.filteredTransactions.length;
+  }
+
+  // Method to refresh pagination when needed
+  void _refreshPagination() {
+    setState(() {
+      currentPage = 1;
+      expandedCustomerId = null;
+      expandedTransactionId = null;
+      _isDataLoaded = false;
+    });
+
+    // Update counts after a brief delay to ensure state is ready
+    Future.delayed(Duration(milliseconds: 100), () {
+      _updateDataCounts();
+    });
   }
 
   @override
@@ -82,9 +144,18 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
             bool isMobile = constraints.maxWidth <= 600;
 
             return Padding(
-              padding: EdgeInsets.all(
-                isDesktop ? 24.0 : (isTablet ? 20.0 : 16.0),
-              ),
+              padding:
+                  isDesktop
+                      ? const EdgeInsets.all(24)
+                      : isTablet
+                      ? const EdgeInsets.all(20)
+                      : const EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        top: 16,
+                        bottom: 10, // 👈 Mobile-ൽ bottom padding മാറ്റാം
+                      ),
+
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -92,7 +163,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
                   SizedBox(height: 24),
                   _buildTabsAndActions(isDesktop, isTablet, isMobile),
                   SizedBox(height: 20),
-                  // Only show search and filter for All Customers tab
+                  // Only show search and filter for All Customers and Transaction tabs
                   if (selectedTab != 2) ...[
                     _buildSearchAndFilter(isDesktop, isTablet, isMobile),
                     SizedBox(height: 20),
@@ -105,18 +176,18 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
                       isTabletMini,
                     ),
                   ),
-                  // Only show pagination for All Customers tab
-                  if (selectedTab != 2) ...[
+                  // Only show pagination for All Customers and Transaction tabs
+                  if (selectedTab != 2 && _isDataLoaded) ...[
                     Padding(
                       padding: const EdgeInsets.only(top: 10.0),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          if (!isMobile)
-                            _buildPaginationInfo(
-                              showPerPage: true,
-                              showRangeText: false,
-                            ),
+                          _buildPaginationInfo(
+                            showPerPage: true,
+                            showRangeText: false,
+                            isMobile: isMobile,
+                          ),
                           Expanded(
                             child: _buildPagination(
                               isDesktop,
@@ -167,9 +238,22 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
               expandedCustomerId = null;
             });
           },
+          onCustomerCountChanged: (count) {
+            setState(() {
+              _customerCount = count;
+              _isDataLoaded = true;
+            });
+          },
+          onDataLoaded: () {
+            // Callback when data is loaded
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _updateDataCounts();
+            });
+          },
         );
       case 1: // Transaction
         return AllTransaction(
+          key: _allTransactionKey,
           currentPage: currentPage,
           itemsPerPage: itemsPerPage,
           searchQuery: searchQuery,
@@ -183,6 +267,18 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
             setState(() {
               currentPage = page;
               expandedTransactionId = null;
+            });
+          },
+          onTransactionCountChanged: (count) {
+            setState(() {
+              _transactionCount = count;
+              _isDataLoaded = true;
+            });
+          },
+          onDataLoaded: () {
+            // Callback when data is loaded
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _updateDataCounts();
             });
           },
         );
@@ -216,10 +312,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
         if (isDesktop || isTablet)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildTabs(isDesktop, isTablet, isMobile),
-              if (isMobile) Row(children: [_buildAddCustomerButton()]),
-            ],
+            children: [_buildTabs(isDesktop, isTablet, isMobile)],
           )
         else ...[
           _buildTabs(isDesktop, isTablet, isMobile),
@@ -237,12 +330,12 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
         children: List.generate(tabs.length, (index) {
           bool isSelected = selectedTab == index;
           return GestureDetector(
-            onTap:
-                () => setState(() {
-                  selectedTab = index;
-                  expandedCustomerId = null; // Close any expanded details
-                  currentPage = 1; // Reset to first page
-                }),
+            onTap: () {
+              setState(() {
+                selectedTab = index;
+              });
+              _refreshPagination(); // Use the refresh method
+            },
             child: Container(
               padding: EdgeInsets.symmetric(
                 horizontal: isDesktop ? 20 : (isTablet ? 16 : 12),
@@ -273,13 +366,18 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
 
   Widget _buildAddCustomerButton() {
     return InkWell(
-      onTap:
-          () => setState(() {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => CustomerForm()),
-            );
-          }),
+      onTap: () async {
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => CustomerForm()),
+        );
+
+        // Refresh data if a customer was added
+        if (result == true && selectedTab == 0) {
+          await _allCustomerKey.currentState?.refreshCustomers();
+          _refreshPagination();
+        }
+      },
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
@@ -329,7 +427,16 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
                   border: InputBorder.none,
                   icon: Icon(Icons.search, size: 16, color: Color(0xFF6B7280)),
                 ),
-                onChanged: (value) => setState(() => searchQuery = value),
+                onChanged: (value) {
+                  setState(() {
+                    searchQuery = value;
+                    currentPage = 1; // Reset to first page on search
+                  });
+                  // Update counts after search
+                  Future.delayed(Duration(milliseconds: 100), () {
+                    _updateDataCounts();
+                  });
+                },
               ),
             ),
           ),
@@ -365,6 +472,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
   Widget _buildPaginationInfo({
     bool showRangeText = true,
     bool showPerPage = true,
+    bool isMobile = false,
   }) {
     int totalItems = currentTabCount;
     int startItem = totalItems > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0;
@@ -376,7 +484,8 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
         if (showPerPage)
           Row(
             children: [
-              Text('Show: ', style: TextStyle(color: Color(0xFF6B7280))),
+              if (!isMobile)
+                Text('Show: ', style: TextStyle(color: Color(0xFF6B7280))),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 1),
                 decoration: BoxDecoration(
@@ -384,6 +493,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
                 ),
                 child: DropdownButton2<int>(
                   value: itemsPerPage,
+                  underline: SizedBox.shrink(),
                   items:
                       [10, 25, 50, 100].map((int item) {
                         return DropdownMenuItem<int>(
@@ -402,17 +512,33 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
                       itemsPerPage = value ?? 25;
                       currentPage = 1;
                     });
+                    _updateDataCounts();
                   },
-                  buttonStyleData: ButtonStyleData(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    height: 40,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFE5E7EB)),
-                      color: Colors.white,
-                    ),
-                  ),
+                  buttonStyleData:
+                      isMobile
+                          ? ButtonStyleData(
+                            height: 30,
+                            width: 50,
+                            overlayColor: MaterialStateProperty.all(
+                              Colors.transparent,
+                            ),
+                          )
+                          : ButtonStyleData(
+                            padding: EdgeInsets.symmetric(horizontal: 12),
+                            height: 40,
+                            overlayColor: MaterialStateProperty.all(
+                              Colors.transparent,
+                            ),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: const Color(0xFFE5E7EB),
+                              ),
+                              color: Colors.white,
+                            ),
+                          ),
                   dropdownStyleData: DropdownStyleData(
+                    width: isMobile ? 70 : null,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
                       color: Colors.white,
@@ -441,6 +567,16 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
     int totalItems = currentTabCount;
     int totalPages = totalItems > 0 ? (totalItems / itemsPerPage).ceil() : 1;
 
+    // Ensure current page is within valid range
+    if (currentPage > totalPages && totalPages > 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          currentPage = totalPages;
+        });
+      });
+    }
+
+    /// 🔹 Full pagination (for desktop/tablet)
     List<dynamic> getPageNumbers() {
       List<dynamic> pages = [];
 
@@ -480,72 +616,127 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
       return pages;
     }
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        IconButton(
-          onPressed:
-              currentPage > 1
-                  ? () => setState(() {
-                    currentPage--;
-                    expandedCustomerId = null;
-                  })
-                  : null,
-          icon: Icon(Icons.chevron_left),
-          color: currentPage > 1 ? kPrimaryColor : Color(0xFF9CA3AF),
-        ),
-        ...getPageNumbers().map((pageItem) {
-          if (pageItem == '...') {
-            return Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                '...',
-                style: TextStyle(
-                  color: Color(0xFF6B7280),
-                  fontWeight: FontWeight.w500,
+    /// 🔹 Compact pagination (for mobile)
+    Widget _buildCompactPagination() {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            onPressed:
+                currentPage > 1
+                    ? () {
+                      setState(() {
+                        currentPage--;
+                        expandedCustomerId = null;
+                        expandedTransactionId = null;
+                      });
+                    }
+                    : null,
+            icon: Icon(Icons.chevron_left),
+            color: currentPage > 1 ? kPrimaryColor : Color(0xFF9CA3AF),
+          ),
+          Text(
+            "$currentPage / $totalPages",
+            style: TextStyle(fontWeight: FontWeight.w600, color: kPrimaryColor),
+          ),
+          IconButton(
+            onPressed:
+                currentPage < totalPages
+                    ? () {
+                      setState(() {
+                        currentPage++;
+                        expandedCustomerId = null;
+                        expandedTransactionId = null;
+                      });
+                    }
+                    : null,
+            icon: Icon(Icons.chevron_right),
+            color: currentPage < totalPages ? kPrimaryColor : Color(0xFF9CA3AF),
+          ),
+        ],
+      );
+    }
+
+    /// 🔹 Full pagination (your existing UI)
+    Widget _buildFullPagination() {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            onPressed:
+                currentPage > 1
+                    ? () {
+                      setState(() {
+                        currentPage--;
+                        expandedCustomerId = null;
+                        expandedTransactionId = null;
+                      });
+                    }
+                    : null,
+            icon: Icon(Icons.chevron_left),
+            color: currentPage > 1 ? kPrimaryColor : Color(0xFF9CA3AF),
+          ),
+          ...getPageNumbers().map((pageItem) {
+            if (pageItem == '...') {
+              return Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  '...',
+                  style: TextStyle(
+                    color: Color(0xFF6B7280),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              );
+            }
+
+            int pageNum = pageItem as int;
+            bool isSelected = pageNum == currentPage;
+
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  currentPage = pageNum;
+                  expandedCustomerId = null;
+                  expandedTransactionId = null;
+                });
+              },
+              child: Container(
+                margin: EdgeInsets.symmetric(horizontal: 4),
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? kPrimaryColor : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  pageNum.toString(),
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : Color(0xFF6B7280),
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  ),
                 ),
               ),
             );
-          }
+          }).toList(),
+          IconButton(
+            onPressed:
+                currentPage < totalPages
+                    ? () {
+                      setState(() {
+                        currentPage++;
+                        expandedCustomerId = null;
+                        expandedTransactionId = null;
+                      });
+                    }
+                    : null,
+            icon: Icon(Icons.chevron_right),
+            color: currentPage < totalPages ? kPrimaryColor : Color(0xFF9CA3AF),
+          ),
+        ],
+      );
+    }
 
-          int pageNum = pageItem as int;
-          bool isSelected = pageNum == currentPage;
-
-          return GestureDetector(
-            onTap:
-                () => setState(() {
-                  currentPage = pageNum;
-                  expandedCustomerId = null;
-                }),
-            child: Container(
-              margin: EdgeInsets.symmetric(horizontal: 4),
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: isSelected ? kPrimaryColor : Colors.transparent,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                pageNum.toString(),
-                style: TextStyle(
-                  color: isSelected ? Colors.white : Color(0xFF6B7280),
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-        IconButton(
-          onPressed:
-              currentPage < totalPages
-                  ? () => setState(() {
-                    currentPage++;
-                    expandedCustomerId = null;
-                  })
-                  : null,
-          icon: Icon(Icons.chevron_right),
-          color: currentPage < totalPages ? kPrimaryColor : Color(0xFF9CA3AF),
-        ),
-      ],
-    );
+    /// 🔹 Auto-switch based on device
+    return isMobile ? _buildCompactPagination() : _buildFullPagination();
   }
 }
