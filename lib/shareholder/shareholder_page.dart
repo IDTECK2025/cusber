@@ -5,6 +5,7 @@ import 'package:gold_pos/api.dart';
 import 'package:gold_pos/shareholder/form_shareholder.dart';
 import 'package:gold_pos/utils/avathar.dart';
 import 'package:gold_pos/utils/diamond_indicator.dart';
+import 'package:gold_pos/utils/errorState.dart';
 import 'package:gold_pos/utils/refresh_button.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -119,6 +120,8 @@ class _ShareholderManagementScreenState
   List<Shareholder> shareholders = [];
   bool isLoading = false;
   String? error;
+  ErrorType? errorType;
+  String? errorMessage;
 
   @override
   void initState() {
@@ -142,7 +145,8 @@ class _ShareholderManagementScreenState
   Future<void> fetchShareholders() async {
     setState(() {
       isLoading = true;
-      error = null;
+      errorMessage = null;
+      errorType = null;
     });
 
     try {
@@ -150,7 +154,8 @@ class _ShareholderManagementScreenState
 
       if (token == null || token.isEmpty) {
         setState(() {
-          error = 'Please login first - No authentication token found';
+          errorType = ErrorType.unauthorized;
+          errorMessage = 'Please login first - No authentication token found';
           isLoading = false;
         });
         return;
@@ -176,26 +181,18 @@ class _ShareholderManagementScreenState
 
         List<dynamic> userData = [];
 
-        // Handle different response structures
         if (data is List) {
           userData = data;
         } else if (data is Map) {
           userData = data['data'] ?? data['users'] ?? data['result'] ?? [];
         }
 
-        print('User data length: ${userData.length}');
-
-        // Parse each user safely
         List<Shareholder> allShareholders = [];
-        for (int i = 0; i < userData.length; i++) {
+        for (var userJson in userData) {
           try {
-            var userJson = userData[i];
-            print('Parsing user $i: $userJson');
             allShareholders.add(Shareholder.fromJson(userJson));
           } catch (e) {
-            print('Error parsing user at index $i: $e');
-            print('User data: ${userData[i]}');
-            // Continue with other users instead of failing completely
+            print('Error parsing user: $e');
           }
         }
 
@@ -206,22 +203,29 @@ class _ShareholderManagementScreenState
                   .toList();
           isLoading = false;
         });
-
-        print('Found ${shareholders.length} shareholders');
       } else if (response.statusCode == 401) {
         setState(() {
-          error = 'Authentication failed. Token may be expired.';
+          errorType = ErrorType.unauthorized;
+          errorMessage = 'Authentication failed. Token may be expired.';
+          isLoading = false;
+        });
+      } else if (response.statusCode >= 500) {
+        setState(() {
+          errorType = ErrorType.server;
+          errorMessage = 'Server error: ${response.statusCode}';
           isLoading = false;
         });
       } else {
         setState(() {
-          error = 'Failed to load users: ${response.statusCode}';
+          errorType = ErrorType.network;
+          errorMessage = 'Failed to load users: ${response.statusCode}';
           isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
-        error = 'Error fetching users: $e';
+        errorType = ErrorType.network;
+        errorMessage = 'Error fetching users: please check your server';
         isLoading = false;
       });
       print('Exception in fetchShareholders: $e');
@@ -456,25 +460,27 @@ class _ShareholderManagementScreenState
     bool isMobile,
   ) {
     if (isLoading) {
-      return Center(child: DiamondIndicator(color: kPrimaryColor));
-    }
-
-    if (error != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red),
-            SizedBox(height: 16),
+            DiamondIndicator(color: kPrimaryColor, size: 9),
+            SizedBox(height: 25),
             Text(
-              error!,
-              style: TextStyle(color: Colors.red),
-              textAlign: TextAlign.center,
+              'Loading shareholders...',
+              style: TextStyle(color: Color(0xFF6B7280), fontSize: 16),
             ),
-            SizedBox(height: 16),
-            ElevatedButton(onPressed: fetchShareholders, child: Text('Retry')),
           ],
         ),
+      );
+    }
+
+    if (errorMessage != null) {
+      return ErrorStatePage(
+        type: errorType ?? ErrorType.server,
+        message: errorMessage!,
+        onRetry: fetchShareholders,
       );
     }
 

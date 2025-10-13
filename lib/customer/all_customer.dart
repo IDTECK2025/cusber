@@ -2,6 +2,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:gold_pos/api.dart';
+import 'package:gold_pos/customer/pdf_service.dart';
 import 'package:gold_pos/utils/avathar.dart';
 import 'package:gold_pos/utils/diamond_indicator.dart';
 import 'package:gold_pos/utils/responsive_size.dart';
@@ -181,7 +182,7 @@ class AllCustomerState extends State<AllCustomer> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             DiamondIndicator(size: 10),
-            SizedBox(height: 20),
+            SizedBox(height: 25),
             Text(
               'Loading customers...',
               style: TextStyle(color: Color(0xFF6B7280), fontSize: 16),
@@ -210,7 +211,7 @@ class AllCustomerState extends State<AllCustomer> {
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 32),
               child: Text(
-                errorMessage!,
+                'Please check your internet connection and try again.',
                 style: TextStyle(color: Color(0xFF6B7280)),
                 textAlign: TextAlign.center,
               ),
@@ -219,7 +220,7 @@ class AllCustomerState extends State<AllCustomer> {
             ElevatedButton(
               onPressed: _fetchCustomers,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFFEAB308),
+                backgroundColor: kPrimaryColor,
                 foregroundColor: Colors.white,
                 padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
@@ -736,7 +737,7 @@ class AllCustomerState extends State<AllCustomer> {
                 ),
               ),
               IconButton(
-                onPressed: () => _showPdfPreview(customer),
+                onPressed: () => CustomerPDFService.preview(customer, context),
                 icon: Icon(Icons.print_rounded),
                 tooltip: 'Print Customer Details',
               ),
@@ -841,7 +842,7 @@ class AllCustomerState extends State<AllCustomer> {
                 ),
               ),
               IconButton(
-                onPressed: () => _showPdfPreview(customer),
+                onPressed: () => CustomerPDFService.preview(customer, context),
                 icon: Icon(Icons.print_rounded),
                 tooltip: 'Print Customer Details',
               ),
@@ -934,473 +935,493 @@ class AllCustomerState extends State<AllCustomer> {
     );
   }
 
-  Future<void> _showPdfPreview(Customer customer) async {
-    try {
-      final pdf = await _generateCustomerPDF(customer);
+  // Future<void> _showPdfPreview(Customer customer) async {
+  //   try {
+  //     final pdf = await _generateCustomerPDF(customer);
 
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return Dialog(
-            insetPadding: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Container(
-              width: 700,
-              height: MediaQuery.of(context).size.height * 0.8,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: [
-                  // PDF Preview
-                  Expanded(
-                    child: Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: PdfPreview(
-                            build: (format) => pdf.save(),
-                            padding: EdgeInsets.zero,
-                            allowPrinting: false,
-                            allowSharing: false,
-                            canChangeOrientation: false,
-                            canChangePageFormat: false,
-                            canDebug: false,
-                            maxPageWidth: 700,
-                            initialPageFormat: PdfPageFormat.a4,
-                            pdfFileName:
-                                'Customer_${customer.customerId}_${customer.fullName.replaceAll(' ', '_')}.pdf',
-                            pdfPreviewPageDecoration: BoxDecoration(
-                              color: Colors.white,
-                            ),
-                            actionBarTheme: const PdfActionBarTheme(
-                              backgroundColor: Colors.white,
-                              height: 50,
-                              elevation: 2,
-                              actionSpacing: 20,
-                            ),
-                            actions: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: ElevatedButton(
-                                      onPressed:
-                                          () => _printCustomerPDF(customer),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: kBlueColor,
-                                        minimumSize: const Size.fromHeight(60),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            0,
-                                          ),
-                                        ),
-                                      ),
-                                      child: const Text(
-                                        'PRINT',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: ElevatedButton(
-                                      onPressed: () async {
-                                        Navigator.of(context).pop();
-                                        await _smartDownloadCustomerPDF(
-                                          customer,
-                                        );
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: kPrimaryColor,
-                                        minimumSize: const Size.fromHeight(60),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            0,
-                                          ),
-                                        ),
-                                      ),
-                                      child: const Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.download,
-                                            size: 16,
-                                            color: Colors.white,
-                                          ),
-                                          SizedBox(width: 4),
-                                          Text(
-                                            'Download',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        Positioned(
-                          top: 12,
-                          right: 12,
-                          child: IconButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            icon: Icon(Icons.close, color: Colors.grey),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      );
-    } catch (e) {
-      print('Error generating PDF preview: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error generating PDF: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
+  //     showDialog(
+  //       context: context,
+  //       barrierDismissible: false,
+  //       builder: (BuildContext context) {
+  //         return Dialog(
+  //           insetPadding: const EdgeInsets.all(16),
+  //           shape: RoundedRectangleBorder(
+  //             borderRadius: BorderRadius.circular(12),
+  //           ),
+  //           child: Container(
+  //             width: 700,
+  //             height: MediaQuery.of(context).size.height * 0.8,
+  //             decoration: BoxDecoration(
+  //               color: Colors.white,
+  //               borderRadius: BorderRadius.circular(12),
+  //             ),
+  //             child: Column(
+  //               children: [
+  //                 // PDF Preview
+  //                 Expanded(
+  //                   child: Stack(
+  //                     children: [
+  //                       ClipRRect(
+  //                         borderRadius: BorderRadius.circular(12),
+  //                         child: PdfPreview(
+  //                           build: (format) => pdf.save(),
+  //                           padding: EdgeInsets.zero,
+  //                           allowPrinting: false,
+  //                           allowSharing: false,
+  //                           canChangeOrientation: false,
+  //                           canChangePageFormat: false,
+  //                           canDebug: false,
+  //                           maxPageWidth: 700,
+  //                           initialPageFormat: PdfPageFormat.a4,
+  //                           pdfFileName:
+  //                               'Customer_${customer.customerId}_${customer.fullName.replaceAll(' ', '_')}.pdf',
+  //                           pdfPreviewPageDecoration: BoxDecoration(
+  //                             color: Colors.white,
+  //                           ),
+  //                           actionBarTheme: const PdfActionBarTheme(
+  //                             backgroundColor: Colors.white,
+  //                             height: 50,
+  //                             elevation: 2,
+  //                             actionSpacing: 20,
+  //                           ),
+  //                           actions: [
+  //                             Row(
+  //                               children: [
+  //                                 Expanded(
+  //                                   child: ElevatedButton(
+  //                                     onPressed:
+  //                                         () => _printCustomerPDF(
+  //                                           customer,
+  //                                           context,
+  //                                         ),
+  //                                     style: ElevatedButton.styleFrom(
+  //                                       backgroundColor: kBlueColor,
+  //                                       minimumSize: const Size.fromHeight(60),
+  //                                       shape: RoundedRectangleBorder(
+  //                                         borderRadius: BorderRadius.circular(
+  //                                           0,
+  //                                         ),
+  //                                       ),
+  //                                     ),
+  //                                     child: const Text(
+  //                                       'PRINT',
+  //                                       style: TextStyle(
+  //                                         color: Colors.white,
+  //                                         fontWeight: FontWeight.w600,
+  //                                       ),
+  //                                     ),
+  //                                   ),
+  //                                 ),
+  //                                 Expanded(
+  //                                   child: ElevatedButton(
+  //                                     onPressed: () async {
+  //                                       Navigator.of(context).pop();
+  //                                       await _smartDownloadCustomerPDF(
+  //                                         customer,
+  //                                       );
+  //                                     },
+  //                                     style: ElevatedButton.styleFrom(
+  //                                       backgroundColor: kPrimaryColor,
+  //                                       minimumSize: const Size.fromHeight(60),
+  //                                       shape: RoundedRectangleBorder(
+  //                                         borderRadius: BorderRadius.circular(
+  //                                           0,
+  //                                         ),
+  //                                       ),
+  //                                     ),
+  //                                     child: const Row(
+  //                                       mainAxisAlignment:
+  //                                           MainAxisAlignment.center,
+  //                                       mainAxisSize: MainAxisSize.min,
+  //                                       children: [
+  //                                         Icon(
+  //                                           Icons.download,
+  //                                           size: 16,
+  //                                           color: Colors.white,
+  //                                         ),
+  //                                         SizedBox(width: 4),
+  //                                         Text(
+  //                                           'Download',
+  //                                           style: TextStyle(
+  //                                             color: Colors.white,
+  //                                             fontWeight: FontWeight.w600,
+  //                                           ),
+  //                                         ),
+  //                                       ],
+  //                                     ),
+  //                                   ),
+  //                                 ),
+  //                               ],
+  //                             ),
+  //                           ],
+  //                         ),
+  //                       ),
+  //                       Positioned(
+  //                         top: 12,
+  //                         right: 12,
+  //                         child: IconButton(
+  //                           onPressed: () => Navigator.of(context).pop(),
+  //                           icon: Icon(Icons.close, color: Colors.grey),
+  //                         ),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //         );
+  //       },
+  //     );
+  //   } catch (e) {
+  //     print('Error generating PDF preview: $e');
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text('Error generating PDF: $e'),
+  //         backgroundColor: Colors.red,
+  //       ),
+  //     );
+  //   }
+  // }
 
-  Future<void> _smartDownloadCustomerPDF(Customer customer) async {
-    try {
-      final pdf = await _generateCustomerPDF(customer);
-      final fileName =
-          'Customer_${customer.customerId}_${customer.fullName.replaceAll(' ', '_')}.pdf';
+  // Future<void> _smartDownloadCustomerPDF(Customer customer) async {
+  //   try {
+  //     final pdf = await _generateCustomerPDF(customer);
+  //     final fileName =
+  //         'Customer_${customer.customerId}_${customer.fullName.replaceAll(' ', '_')}.pdf';
 
-      // Try file picker first
-      try {
-        String? outputFile = await FilePicker.platform.saveFile(
-          dialogTitle: 'Save Customer Details PDF',
-          fileName: fileName,
-          type: FileType.custom,
-          allowedExtensions: ['pdf'],
-        );
+  //     // Try file picker first
+  //     try {
+  //       String? outputFile = await FilePicker.platform.saveFile(
+  //         dialogTitle: 'Save Customer Details PDF',
+  //         fileName: fileName,
+  //         type: FileType.custom,
+  //         allowedExtensions: ['pdf'],
+  //       );
 
-        if (outputFile != null) {
-          final file = File(outputFile);
-          await file.writeAsBytes(await pdf.save());
+  //       if (outputFile != null) {
+  //         final file = File(outputFile);
+  //         await file.writeAsBytes(await pdf.save());
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'PDF saved successfully!\n${path.basename(outputFile)}',
-              ),
-              duration: const Duration(seconds: 4),
-              backgroundColor: Colors.green,
-              action: SnackBarAction(
-                label: 'Open Folder',
-                textColor: Colors.white,
-                onPressed: () => _openFileLocation(outputFile),
-              ),
-            ),
-          );
-          return;
-        } else {
-          // User canceled
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Save canceled'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-          return;
-        }
-      } catch (pickerError) {
-        print('File picker failed (likely entitlement issue): $pickerError');
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           SnackBar(
+  //             content: Text(
+  //               'PDF saved successfully!\n${path.basename(outputFile)}',
+  //             ),
+  //             duration: const Duration(seconds: 4),
+  //             backgroundColor: Colors.green,
+  //             action: SnackBarAction(
+  //               label: 'Open Folder',
+  //               textColor: Colors.white,
+  //               onPressed: () => _openFileLocation(outputFile),
+  //             ),
+  //           ),
+  //         );
+  //         return;
+  //       } else {
+  //         // User canceled
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           const SnackBar(
+  //             content: Text('Save canceled'),
+  //             backgroundColor: Colors.orange,
+  //           ),
+  //         );
+  //         return;
+  //       }
+  //     } catch (pickerError) {
+  //       print('File picker failed (likely entitlement issue): $pickerError');
 
-        // Fallback to Documents directory
-        final documentsDir = await getApplicationDocumentsDirectory();
-        final filePath = path.join(documentsDir.path, fileName);
+  //       // Fallback to Documents directory
+  //       final documentsDir = await getApplicationDocumentsDirectory();
+  //       final filePath = path.join(documentsDir.path, fileName);
 
-        final file = File(filePath);
-        await file.writeAsBytes(await pdf.save());
+  //       final file = File(filePath);
+  //       await file.writeAsBytes(await pdf.save());
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('PDF saved to Documents folder:\n$fileName'),
-            duration: const Duration(seconds: 5),
-            backgroundColor: Colors.green,
-            action: SnackBarAction(
-              label: 'Show in Finder',
-              textColor: Colors.white,
-              onPressed: () {
-                if (Platform.isMacOS) {
-                  Process.run('open', ['-R', filePath]);
-                }
-              },
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      print('PDF save error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Save failed: $e'), backgroundColor: Colors.red),
-      );
-    }
-  }
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text('PDF saved to Documents folder:\n$fileName'),
+  //           duration: const Duration(seconds: 5),
+  //           backgroundColor: Colors.green,
+  //           action: SnackBarAction(
+  //             label: 'Show in Finder',
+  //             textColor: Colors.white,
+  //             onPressed: () {
+  //               if (Platform.isMacOS) {
+  //                 Process.run('open', ['-R', filePath]);
+  //               }
+  //             },
+  //           ),
+  //         ),
+  //       );
+  //     }
+  //   } catch (e) {
+  //     print('PDF save error: $e');
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text('Save failed: $e'), backgroundColor: Colors.red),
+  //     );
+  //   }
+  // }
 
-  Future<void> _printCustomerPDF(Customer customer) async {
-    try {
-      final pdf = await _generateCustomerPDF(customer);
+  // Future<void> _printCustomerPDF(
+  //   Customer customer,
+  //   BuildContext context,
+  // ) async {
+  //   // Show loading indicator
+  //   showDialog(
+  //     context: context,
+  //     barrierDismissible: false,
+  //     builder: (_) => const Center(child: CircularProgressIndicator()),
+  //   );
 
-      // Get default printer and print directly
-      final printers = await Printing.listPrinters();
-      if (printers.isNotEmpty) {
-        // Use first available printer as default
-        final defaultPrinter = printers.first;
+  //   try {
+  //     final pdf = await _generateCustomerPDF(customer);
 
-        await Printing.directPrintPdf(
-          printer: defaultPrinter,
-          onLayout: (format) async => pdf.save(),
-          name: 'Customer_Details_${DateTime.now().millisecondsSinceEpoch}',
-          usePrinterSettings: true,
-        );
-      } else {
-        // Fallback to print dialog if no default printer found
-        await Printing.layoutPdf(
-          onLayout: (format) async => pdf.save(),
-          name: 'Customer_Details_${DateTime.now().millisecondsSinceEpoch}',
-        );
-      }
-    } catch (e) {
-      print('Direct printing failed, falling back to print dialog: $e');
-      // Fallback to print dialog
-      try {
-        final pdf = await _generateCustomerPDF(customer);
-        await Printing.layoutPdf(
-          onLayout: (format) async => pdf.save(),
-          name: 'Customer_Details_${DateTime.now().millisecondsSinceEpoch}',
-        );
-      } catch (fallbackError) {
-        throw Exception('Printing failed: $fallbackError');
-      }
-    }
-  }
+  //     // Desktop: try direct printer
+  //     if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+  //       try {
+  //         final printers = await Printing.listPrinters();
+  //         if (printers.isNotEmpty) {
+  //           await Printing.directPrintPdf(
+  //             printer: printers.first,
+  //             onLayout: (format) async => pdf.save(),
+  //             name: 'Customer_Details_${DateTime.now().millisecondsSinceEpoch}',
+  //           );
+  //           ScaffoldMessenger.of(context).showSnackBar(
+  //             const SnackBar(
+  //               content: Text('Sent to printer successfully!'),
+  //               backgroundColor: Colors.green,
+  //             ),
+  //           );
+  //           return;
+  //         }
+  //       } catch (e) {
+  //         debugPrint('Direct print failed: $e');
+  //       }
+  //     }
 
-  Future<pw.Document> _generateCustomerPDF(Customer customer) async {
-    final regularFont = await PdfGoogleFonts.nunitoRegular();
-    final boldFont = await PdfGoogleFonts.nunitoBold();
+  //     // Mobile (or fallback): show print dialog
+  //     await Printing.layoutPdf(
+  //       onLayout: (format) async => pdf.save(),
+  //       name: 'Customer_Details_${DateTime.now().millisecondsSinceEpoch}',
+  //     );
+  //   } catch (e) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text('Printing failed: $e'),
+  //         backgroundColor: Colors.red,
+  //       ),
+  //     );
+  //   } finally {
+  //     if (Navigator.of(context, rootNavigator: true).canPop()) {
+  //       Navigator.of(context, rootNavigator: true).pop();
+  //     }
+  //   }
+  // }
 
-    final pdf = pw.Document(
-      theme: pw.ThemeData.withFont(base: regularFont, bold: boldFont),
-    );
+  // Future<pw.Document> _generateCustomerPDF(Customer customer) async {
+  //   final regularFont = await PdfGoogleFonts.nunitoRegular();
+  //   final boldFont = await PdfGoogleFonts.nunitoBold();
 
-    pdf.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(32),
-        build: (pw.Context context) {
-          return [
-            // Header Section
-            _buildCustomerPDFHeader(customer),
-            pw.SizedBox(height: 24),
+  //   final pdf = pw.Document(
+  //     theme: pw.ThemeData.withFont(base: regularFont, bold: boldFont),
+  //   );
 
-            // Personal Details Section
-            _buildCustomerPDFSection('PERSONAL DETAILS', [
-              ['Full Name', customer.fullName],
-              ['Email Address', customer.email],
-              ['Phone Number', customer.phoneNumber],
-              ['Customer ID', customer.customerId],
-              ['Aadhaar Number', customer.aadhaarNo],
-              ['PAN Number', customer.panNumber],
-            ]),
+  //   pdf.addPage(
+  //     pw.MultiPage(
+  //       pageFormat: PdfPageFormat.a4,
+  //       margin: const pw.EdgeInsets.all(32),
+  //       build: (pw.Context context) {
+  //         return [
+  //           // Header Section
+  //           _buildCustomerPDFHeader(customer),
+  //           pw.SizedBox(height: 24),
 
-            pw.SizedBox(height: 16),
+  //           // Personal Details Section
+  //           _buildCustomerPDFSection('PERSONAL DETAILS', [
+  //             ['Full Name', customer.fullName],
+  //             ['Email Address', customer.email],
+  //             ['Phone Number', customer.phoneNumber],
+  //             ['Customer ID', customer.customerId],
+  //             ['Aadhaar Number', customer.aadhaarNo],
+  //             ['PAN Number', customer.panNumber],
+  //           ]),
 
-            // Bank Details Section
-            _buildCustomerPDFSection('BANK DETAILS', [
-              ['Bank Name', customer.bank],
-              ['Account Number', customer.acc],
-              ['IFSC Code', customer.ifsc],
-              ['Branch Name', customer.branch],
-            ]),
+  //           // pw.SizedBox(height: 16),
 
-            pw.SizedBox(height: 16),
+  //           // // Bank Details Section
+  //           // _buildCustomerPDFSection('BANK DETAILS', [
+  //           //   ['Bank Name', customer.bank],
+  //           //   ['Account Number', customer.acc],
+  //           //   ['IFSC Code', customer.ifsc],
+  //           //   ['Branch Name', customer.branch],
+  //           // ]),
+  //           pw.SizedBox(height: 16),
 
-            // Address Details Section
-            _buildCustomerPDFSection('ADDRESS DETAILS', [
-              ['Address', customer.address],
-              ['City', customer.city],
-              ['State', customer.state],
-            ]),
+  //           // Address Details Section
+  //           _buildCustomerPDFSection('ADDRESS DETAILS', [
+  //             ['Address', customer.address],
+  //             ['City', customer.city],
+  //             ['State', customer.state],
+  //           ]),
 
-            pw.SizedBox(height: 16),
+  //           pw.SizedBox(height: 16),
 
-            // Scheme Details Section
-            _buildCustomerPDFSection('SCHEME DETAILS', [
-              ['Scheme Amount', '₹${customer.schemeAmount.toStringAsFixed(2)}'],
-              ['Join Date', _formatDateForPDF(customer.joinDate)],
-              ['Scheme Date', _formatDateForPDF(customer.schemeDate)],
-            ]),
+  //           // Scheme Details Section
+  //           _buildCustomerPDFSection('SCHEME DETAILS', [
+  //             ['Scheme Amount', '₹${customer.schemeAmount.toStringAsFixed(2)}'],
+  //             ['Join Date', _formatDateForPDF(customer.joinDate)],
+  //             ['Scheme Date', _formatDateForPDF(customer.schemeDate)],
+  //           ]),
 
-            pw.SizedBox(height: 24),
-          ];
-        },
-        footer: (pw.Context context) {
-          return _buildCustomerPDFFooter();
-        },
-      ),
-    );
+  //           pw.SizedBox(height: 24),
+  //         ];
+  //       },
+  //       footer: (pw.Context context) {
+  //         return _buildCustomerPDFFooter();
+  //       },
+  //     ),
+  //   );
 
-    return pdf;
-  }
+  //   return pdf;
+  // }
 
-  // Header building method
-  pw.Widget _buildCustomerPDFHeader(Customer customer) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.only(bottom: 20),
-      decoration: const pw.BoxDecoration(
-        border: pw.Border(
-          bottom: pw.BorderSide(width: 2, color: PdfColor.fromInt(0xFFc49253)),
-        ),
-      ),
-      child: pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        children: [
-          pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text(
-                'CUSTOMER DETAILS',
-                style: pw.TextStyle(
-                  fontSize: 24,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColor.fromInt(0xFFc49253),
-                ),
-              ),
-              pw.SizedBox(height: 4),
-              pw.Text(
-                'Generated Date: ${DateFormat('dd/MM/yyyy').format(DateTime.now())}',
-                style: const pw.TextStyle(fontSize: 12),
-              ),
-            ],
-          ),
-          pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.end,
-            children: [
-              pw.Text(
-                'Customer ID:',
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-              ),
-              pw.Text(
-                customer.customerId,
-                style: const pw.TextStyle(fontSize: 12),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  // // Header building method
+  // pw.Widget _buildCustomerPDFHeader(Customer customer) {
+  //   return pw.Container(
+  //     padding: const pw.EdgeInsets.only(bottom: 20),
+  //     decoration: const pw.BoxDecoration(
+  //       border: pw.Border(
+  //         bottom: pw.BorderSide(width: 2, color: PdfColor.fromInt(0xFFc49253)),
+  //       ),
+  //     ),
+  //     child: pw.Row(
+  //       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+  //       children: [
+  //         pw.Column(
+  //           crossAxisAlignment: pw.CrossAxisAlignment.start,
+  //           children: [
+  //             pw.Text(
+  //               'CUSTOMER DETAILS',
+  //               style: pw.TextStyle(
+  //                 fontSize: 24,
+  //                 fontWeight: pw.FontWeight.bold,
+  //                 color: PdfColor.fromInt(0xFFc49253),
+  //               ),
+  //             ),
+  //             pw.SizedBox(height: 4),
+  //             pw.Text(
+  //               'Generated Date: ${DateFormat('dd/MM/yyyy').format(DateTime.now())}',
+  //               style: const pw.TextStyle(fontSize: 12),
+  //             ),
+  //           ],
+  //         ),
+  //         pw.Column(
+  //           crossAxisAlignment: pw.CrossAxisAlignment.end,
+  //           children: [
+  //             pw.Text(
+  //               'Customer ID:',
+  //               style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+  //             ),
+  //             pw.Text(
+  //               customer.customerId,
+  //               style: const pw.TextStyle(fontSize: 12),
+  //             ),
+  //           ],
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
-  // Section building method (same as your pattern)
-  pw.Widget _buildCustomerPDFSection(String title, List<List<String>> data) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Text(
-          title,
-          style: pw.TextStyle(
-            fontSize: 14,
-            fontWeight: pw.FontWeight.bold,
-            color: PdfColor.fromInt(0xFFc49253),
-          ),
-        ),
-        pw.SizedBox(height: 6),
-        pw.Container(
-          decoration: pw.BoxDecoration(
-            border: pw.Border.all(color: PdfColors.grey300),
-            borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
-          ),
-          child: pw.Table(
-            columnWidths: {
-              0: const pw.FlexColumnWidth(1),
-              1: const pw.FlexColumnWidth(2.5),
-            },
-            children:
-                data.map((row) {
-                  return pw.TableRow(
-                    children: [
-                      pw.Container(
-                        padding: const pw.EdgeInsets.all(8),
-                        decoration: const pw.BoxDecoration(
-                          color: PdfColors.grey100,
-                          border: pw.Border(
-                            right: pw.BorderSide(color: PdfColors.grey300),
-                          ),
-                        ),
-                        child: pw.Text(
-                          row[0],
-                          style: pw.TextStyle(
-                            fontWeight: pw.FontWeight.bold,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ),
-                      pw.Container(
-                        padding: const pw.EdgeInsets.all(8),
-                        child: pw.Text(
-                          row[1].isNotEmpty ? row[1] : 'Not provided',
-                          style: const pw.TextStyle(fontSize: 11, height: 1.3),
-                          maxLines:
-                              title == 'ADDRESS DETAILS' && row[0] == 'Address'
-                                  ? 6
-                                  : 2,
-                        ),
-                      ),
-                    ],
-                  );
-                }).toList(),
-          ),
-        ),
-      ],
-    );
-  }
+  // // Section building method (same as your pattern)
+  // pw.Widget _buildCustomerPDFSection(String title, List<List<String>> data) {
+  //   return pw.Column(
+  //     crossAxisAlignment: pw.CrossAxisAlignment.start,
+  //     children: [
+  //       pw.Text(
+  //         title,
+  //         style: pw.TextStyle(
+  //           fontSize: 14,
+  //           fontWeight: pw.FontWeight.bold,
+  //           color: PdfColor.fromInt(0xFFc49253),
+  //         ),
+  //       ),
+  //       pw.SizedBox(height: 6),
+  //       pw.Container(
+  //         decoration: pw.BoxDecoration(
+  //           border: pw.Border.all(color: PdfColors.grey300),
+  //           borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+  //         ),
+  //         child: pw.Table(
+  //           columnWidths: {
+  //             0: const pw.FlexColumnWidth(1),
+  //             1: const pw.FlexColumnWidth(2.5),
+  //           },
+  //           children:
+  //               data.map((row) {
+  //                 return pw.TableRow(
+  //                   children: [
+  //                     pw.Container(
+  //                       padding: const pw.EdgeInsets.all(8),
+  //                       decoration: const pw.BoxDecoration(
+  //                         color: PdfColors.grey100,
+  //                         border: pw.Border(
+  //                           right: pw.BorderSide(color: PdfColors.grey300),
+  //                         ),
+  //                       ),
+  //                       child: pw.Text(
+  //                         row[0],
+  //                         style: pw.TextStyle(
+  //                           fontWeight: pw.FontWeight.bold,
+  //                           fontSize: 11,
+  //                         ),
+  //                       ),
+  //                     ),
+  //                     pw.Container(
+  //                       padding: const pw.EdgeInsets.all(8),
+  //                       child: pw.Text(
+  //                         row[1].isNotEmpty ? row[1] : 'Not provided',
+  //                         style: const pw.TextStyle(fontSize: 11, height: 1.3),
+  //                         maxLines:
+  //                             title == 'ADDRESS DETAILS' && row[0] == 'Address'
+  //                                 ? 6
+  //                                 : 2,
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 );
+  //               }).toList(),
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
-  // Footer building method
-  pw.Widget _buildCustomerPDFFooter() {
-    return pw.Container(
-      padding: const pw.EdgeInsets.only(top: 20),
-      decoration: const pw.BoxDecoration(
-        border: pw.Border(
-          top: pw.BorderSide(width: 1, color: PdfColors.grey300),
-        ),
-      ),
-      child: pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        children: [
-          pw.Text(
-            'Generated on: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}',
-            style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
-          ),
-          pw.Text(
-            'System Generated Document',
-            style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
-          ),
-        ],
-      ),
-    );
-  }
+  // // Footer building method
+  // pw.Widget _buildCustomerPDFFooter() {
+  //   return pw.Container(
+  //     padding: const pw.EdgeInsets.only(top: 20),
+  //     decoration: const pw.BoxDecoration(
+  //       border: pw.Border(
+  //         top: pw.BorderSide(width: 1, color: PdfColors.grey300),
+  //       ),
+  //     ),
+  //     child: pw.Row(
+  //       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+  //       children: [
+  //         pw.Text(
+  //           'Generated on: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}',
+  //           style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+  //         ),
+  //         pw.Text(
+  //           'System Generated Document',
+  //           style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   // Date formatting method
   String _formatDateForPDF(DateTime date) {

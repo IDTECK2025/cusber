@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:gold_pos/customer/customer_page.dart';
-import 'package:gold_pos/dashboard.dart';
 import 'package:gold_pos/layout/layout.dart';
 import 'package:gold_pos/lock/lock.dart';
 import 'package:gold_pos/splash/welcome.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:device_preview/device_preview.dart';
-
 import 'customer/customer_transaction.dart';
 
 void main() {

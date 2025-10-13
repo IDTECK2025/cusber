@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gold_pos/api.dart';
 import 'package:gold_pos/auth_helper.dart';
 import 'package:gold_pos/utils/avathar.dart';
+import 'package:gold_pos/utils/colors.dart';
 import 'package:gold_pos/utils/diamond_indicator.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -528,21 +529,21 @@ class AllTransactionState extends State<AllTransaction> {
                         (route) => false,
                       );
                     },
-                    child: Text('Login'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
+                      backgroundColor: kPrimaryColor,
                       foregroundColor: Colors.white,
                     ),
+                    child: Text('Login'),
                   ),
                   SizedBox(width: 8),
                 ],
                 ElevatedButton(
                   onPressed: _fetchTransactions,
-                  child: Text('Retry'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFFBDAC67),
+                    backgroundColor: kPrimaryColor,
                     foregroundColor: Colors.white,
                   ),
+                  child: Text('Retry'),
                 ),
               ],
             ),

@@ -9,7 +9,7 @@ class DiamondIndicator extends StatefulWidget {
 
   const DiamondIndicator({
     super.key,
-    this.size = 8.0,
+    this.size = 9,
     this.color = kPrimaryColor,
     this.accentColor = kBlueColor,
   });

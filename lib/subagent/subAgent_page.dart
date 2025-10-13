@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:gold_pos/api.dart';
 import 'package:gold_pos/utils/avathar.dart';
 import 'package:gold_pos/utils/diamond_indicator.dart';
+import 'package:gold_pos/utils/errorState.dart';
 import 'package:gold_pos/utils/refresh_button.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -115,7 +116,8 @@ class _SubAgentManagementScreenState extends State<SubAgentManagementScreen> {
 
   List<SubAgent> subAgents = [];
   bool isLoading = false;
-  String? error;
+  ErrorType? errorType;
+  String? errorMessage;
 
   @override
   void initState() {
@@ -139,7 +141,8 @@ class _SubAgentManagementScreenState extends State<SubAgentManagementScreen> {
   Future<void> fetchSubAgents() async {
     setState(() {
       isLoading = true;
-      error = null;
+      errorMessage = null;
+      errorType = null;
     });
 
     try {
@@ -147,7 +150,8 @@ class _SubAgentManagementScreenState extends State<SubAgentManagementScreen> {
 
       if (token == null || token.isEmpty) {
         setState(() {
-          error = 'Please login first - No authentication token found';
+          errorType = ErrorType.unauthorized;
+          errorMessage = 'Please login first - No authentication token found';
           isLoading = false;
         });
         return;
@@ -207,21 +211,30 @@ class _SubAgentManagementScreenState extends State<SubAgentManagementScreen> {
         print('Found ${subAgents.length} subagents');
       } else if (response.statusCode == 401) {
         setState(() {
-          error = 'Authentication failed. Token may be expired.';
+          errorType = ErrorType.unauthorized;
+          errorMessage = 'Authentication failed. Token may be expired.';
+          isLoading = false;
+        });
+      } else if (response.statusCode >= 500) {
+        setState(() {
+          errorType = ErrorType.server;
+          errorMessage = 'Server error: ${response.statusCode}';
           isLoading = false;
         });
       } else {
         setState(() {
-          error = 'Failed to load users: ${response.statusCode}';
+          errorType = ErrorType.network;
+          errorMessage = 'Failed to load users: ${response.statusCode}';
           isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
-        error = 'Error fetching users: $e';
+        errorType = ErrorType.network;
+        errorMessage = 'Error fetching users: please check your server';
         isLoading = false;
       });
-      print('Exception in fetchSubAgents: $e');
+      print('Exception in fetchShareholders: $e');
     }
   }
 
@@ -400,25 +413,27 @@ class _SubAgentManagementScreenState extends State<SubAgentManagementScreen> {
     bool isMobile,
   ) {
     if (isLoading) {
-      return Center(child: DiamondIndicator(color: kPrimaryColor));
-    }
-
-    if (error != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red),
-            SizedBox(height: 16),
+            DiamondIndicator(color: kPrimaryColor, size: 9),
+            SizedBox(height: 25),
             Text(
-              error!,
-              style: TextStyle(color: Colors.red),
-              textAlign: TextAlign.center,
+              'Loading sub agents...',
+              style: TextStyle(color: Color(0xFF6B7280), fontSize: 16),
             ),
-            SizedBox(height: 16),
-            ElevatedButton(onPressed: fetchSubAgents, child: Text('Retry')),
           ],
         ),
+      );
+    }
+
+    if (errorMessage != null) {
+      return ErrorStatePage(
+        type: errorType ?? ErrorType.server,
+        message: errorMessage!,
+        onRetry: fetchSubAgents,
       );
     }
 

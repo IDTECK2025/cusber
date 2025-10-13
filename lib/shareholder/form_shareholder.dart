@@ -360,13 +360,60 @@ class _ShareHolderFormScreenState extends State<ShareHolderForm> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return const AlertDialog(
-          content: Column(
-            children: [
-              DiamondIndicator(color: kPrimaryColor),
-              SizedBox(width: 20),
-              Text('Creating shareholder account...'),
-            ],
+        return Dialog(
+          insetPadding: EdgeInsets.all(16), //
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          elevation: 8,
+          backgroundColor: Colors.white,
+          child: Container(
+            padding: EdgeInsets.all(24),
+            width:
+                MediaQuery.of(context).size.width < 600
+                    ? double.infinity
+                    : (MediaQuery.of(context).size.width < 1000)
+                    ? 450
+                    : 500,
+            height:
+                MediaQuery.of(context).size.width < 600
+                    ? null
+                    : (MediaQuery.of(context).size.width < 1000)
+                    ? 200
+                    : 250,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Enhanced diamond indicator section
+                Container(
+                  padding: EdgeInsets.all(16),
+                  child: DiamondIndicator(color: kPrimaryColor, size: 10),
+                ),
+                SizedBox(height: 20),
+                Text(
+                  'Creating Account',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Setting up your Shareholder profile...',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w400,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 20),
+              ],
+            ),
           ),
         );
       },

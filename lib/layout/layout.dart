@@ -182,14 +182,12 @@ class _LayoutState extends State<Layout> {
 
   // Screens for each menu item
   List<Widget> get _pages => [
-    Expanded(
-      child: DashboardContent(
-        userName: userName,
-        userBalance: userBalance,
-        userRole: userRole,
-        userPhone: userPhone,
-        userCustomerId: userCustomerId,
-      ),
+    DashboardContent(
+      userName: userName,
+      userBalance: userBalance,
+      userRole: userRole,
+      userPhone: userPhone,
+      userCustomerId: userCustomerId,
     ),
     CustomerManagementScreen(initialTab: widget.customerTab),
     ShareholderManagementScreen(),

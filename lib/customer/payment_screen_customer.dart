@@ -176,8 +176,10 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to load customers: ${result['error']}'),
-            backgroundColor: Colors.red,
+            content: Text(
+              'Failed to load customers: Please check your internet connection',
+            ),
+            backgroundColor: kPrimaryColor,
           ),
         );
         _allCustomers = [];
@@ -185,7 +187,9 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error loading customers: ${e.toString()}'),
+          content: Text(
+            'Error loading customers: sorry please check your server',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -292,7 +296,7 @@ class _CustomerPaymentScreenState extends State<CustomerPaymentScreen> {
               'Payment can only be made 20 days before next payable date (${_formatDate(nextPayableDate)}). '
               'You can make payment from ${_formatDate(twentyDaysBefore)} onwards.',
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: kPrimaryColor,
             duration: const Duration(seconds: 5),
           ),
         );
